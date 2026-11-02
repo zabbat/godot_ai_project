@@ -1,0 +1,38 @@
+# Conversion recipes used by the asset map entries. Copy to
+# prototype/asset_map/profiles.toml and adjust sizes to the game.
+# `kind` is how tools/export_assets.py converts: copy, image (Pillow) or
+# ffmpeg (`args` go between the input and the output file).
+# `import` sets Godot import settings ([params] keys of the target's .import).
+# Why a profile has its values is written in the doc named in `spec`.
+
+[profile.copy]
+kind = "copy"
+description = "Copy the file, or the folder tree, unchanged."
+
+[profile.portrait]
+kind = "image"
+description = "Character portrait: square PNG, downscaled (center crop if the master is not square)."
+spec = "prototype/<character doc>.md#portraits"
+format = "png"
+size = [480, 480]
+
+[profile.sfx]
+kind = "ffmpeg"
+description = "Short sound effect: cut the silence at both ends, normalize loudness, mono 16-bit 44.1 kHz WAV."
+spec = "prototype/<audio doc>.md"
+format = "wav"
+args = "-af silenceremove=start_periods=1:start_threshold=-50dB,areverse,silenceremove=start_periods=1:start_threshold=-50dB,areverse,loudnorm=I=-18:TP=-1.5 -ac 1 -ar 44100 -c:a pcm_s16le"
+
+[profile.loop]
+kind = "ffmpeg"
+description = "Ambience or effect loop: Ogg Vorbis, not trimmed (the loop points must stay)."
+spec = "prototype/<audio doc>.md"
+format = "ogg"
+args = "-c:a libvorbis -q:a 5"
+import = { loop = true }
+
+[profile.music]
+kind = "copy"
+description = "Music track: copied as is (mp3 or ogg), looping."
+spec = "docs/game_design/audio.md"
+import = { loop = true }

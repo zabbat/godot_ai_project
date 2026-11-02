@@ -1,0 +1,10 @@
+{{WORKSHOP}}/
+
+# Raw downloads (vendor zips, original files); pages and licenses are recorded in assets/ and docs/references/
+downloads/
+
+# Python caches
+__pycache__/
+
+# Godot generated cache
+.godot/

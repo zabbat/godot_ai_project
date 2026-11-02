@@ -1,0 +1,28 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
+config_version=5
+
+[application]
+
+config/name="{{GAME_NAME}}"
+run/main_scene="res://main.tscn"
+config/features=PackedStringArray("{{ENGINE_VERSION}}", "{{RENDERER_NAME}}")
+config/icon="res://icon.svg"
+
+[display]
+
+window/size/viewport_width={{VIEWPORT_W}}
+window/size/viewport_height={{VIEWPORT_H}}
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+window/handheld/orientation={{ORIENTATION}}
+
+[rendering]
+
+renderer/rendering_method="{{RENDERER_ID}}"
