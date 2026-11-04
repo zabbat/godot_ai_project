@@ -1,7 +1,11 @@
 # Defaults for speak.py. Command-line options override these.
 
 [defaults]
-model = "turbo"      # turbo | english | multilingual | nano  (see SKILL.md "Choosing a model")
+model = "auto"       # auto | english | multilingual | turbo | nano  (see SKILL.md "Choosing a model")
+                     # auto: [markers] in the text -> turbo; exaggeration/cfg given -> english;
+                     #       both -> stop and ask; neither -> english. Naming a model always wins.
+exaggeration = 0.5   # default emotion intensity when a line sets none (and no style preset does)
+cfg_weight = 0.5     # default pace control when a line sets none (lower = slower)
 device = "auto"      # auto | cuda | cpu | mps
 voice = ""           # name of a clip in chatterbox/voices/ (no extension); "" = the model's built-in voice
 language = "en"      # only used by the multilingual model

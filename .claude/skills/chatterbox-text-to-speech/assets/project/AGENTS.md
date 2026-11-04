@@ -28,9 +28,12 @@ carry them into Godot. `output/` is a workshop and may be deleted at any time.
 
 ## Voices (fill in as clips are added)
 
-| Voice file | Character | Notes (age, accent, pitch, source, rights) |
-|---|---|---|
-| _(none yet: the model's built-in voice is used)_ | | |
+Chatterbox cannot make a voice from a description, so each clip's **description** below is what
+lets Claude pick the right one when you ask for "a gravelly old wizard".
+
+| Voice file | Character | What it sounds like (age, gender, pitch, accent, energy) | Source / rights |
+|---|---|---|---|
+| _(none yet: the model's built-in voice is used)_ | | | |
 
 ## Pronunciation respellings
 

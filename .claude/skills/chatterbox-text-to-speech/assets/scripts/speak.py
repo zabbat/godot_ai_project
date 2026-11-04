@@ -14,7 +14,10 @@ sidecar holding every setting and the seed, so the take can be reproduced or twe
 file is a JSON list of objects using the same keys as the sidecar (text, name, style, voice,
 model, seed, exaggeration, ...); a sidecar can be passed back in as a one-line batch.
 
-Prints one JSON object per take on stdout (path, seconds, seed); progress goes to stderr.
+Prints one JSON object per take on stdout (path, seconds, seed). The Chatterbox library also
+prints a few plain lines to stdout, so a reader must keep only lines that start with "{".
+Progress goes to stderr. Do not pipe stdout into a reader that dies on a bad line: closing the
+pipe stops the run. Redirect to a file instead.
 """
 from __future__ import annotations
 
@@ -22,6 +25,7 @@ import argparse
 import json
 import os
 import random
+import re
 import shutil
 import subprocess
 import sys
@@ -43,6 +47,46 @@ MODEL_PARAMS = {
     "multilingual": {"exaggeration", "cfg_weight", "temperature", "top_p", "min_p", "repetition_penalty"},
 }
 TAG_MODELS = ("turbo", "nano")
+TAG_RE = re.compile(r"\[[^\[\]]+\]")
+# The exact markers Turbo/Nano know. Anything else in [brackets] is just text to them.
+VALID_TAGS = {
+    "[angry]", "[fear]", "[surprised]", "[whispering]", "[dramatic]", "[narration]", "[advertisement]",
+    "[happy]", "[crying]", "[sarcastic]", "[laugh]", "[chuckle]", "[sigh]", "[gasp]", "[groan]",
+    "[cough]", "[clear throat]", "[sniff]", "[shush]",
+}
+
+
+class ModelConflict(Exception):
+    pass
+
+
+def resolve_model(spec: dict, default: str) -> tuple[str, str]:
+    """Pick the model for one line. Returns (model, reason).
+
+    Rule (when no model is named on the line/CLI and config says "auto"):
+      [markers] in the text, no exaggeration/cfg_weight given  -> turbo
+      exaggeration and/or cfg_weight given, no markers          -> english
+      both                                                      -> ModelConflict (ask the user)
+      neither                                                   -> english (multilingual if --language is not en)
+    Only values given on the line itself count as "given"; a style preset or config.toml does not.
+    """
+    named = spec.get("model") or default
+    if named != "auto":
+        return named, "model named explicitly"
+    tags = TAG_RE.findall(spec.get("text", ""))
+    given = [k for k in ("exaggeration", "cfg_weight") if spec.get(k) is not None]
+    if tags and given:
+        raise ModelConflict(
+            f"line '{spec.get('name') or spec.get('text', '')[:30]}': has markers {tags} (Turbo) "
+            f"AND {given} (English only). Turbo ignores those numbers; English cannot use markers."
+        )
+    if tags:
+        return "turbo", f"text has markers {tags}"
+    if given:
+        return "english", f"{given} given"
+    if (spec.get("language") or "en") != "en":
+        return "multilingual", f"language {spec['language']}"
+    return "english", "default"
 
 
 def log(*a):
@@ -138,7 +182,9 @@ def build_text(text: str, model: str, preset: dict) -> str:
     """Apply a style preset's tag/prefix/suffix. Tags only exist on Turbo/Nano."""
     out = text.strip()
     if model not in TAG_MODELS:
-        return out  # English/Multilingual have no tags; emotion comes from exaggeration/cfg
+        # English/Multilingual have no tags (they would be read aloud): strip any [markers].
+        # Emotion there comes from exaggeration/cfg, CAPITALS and punctuation.
+        return re.sub(r"\s{2,}", " ", TAG_RE.sub("", out)).strip()
     # A line that already starts with its own [tag] keeps it; the preset adds no second one.
     if preset.get("tag") and not out.startswith("["):
         out = f"{preset['tag']} {out}"
@@ -207,16 +253,25 @@ def run_line(spec: dict, cfg: dict, styles: dict, cache: ModelCache, voices_dir:
             sys.exit(f"Unknown style '{style}'. Known: {', '.join(sorted(styles))}")
         preset = styles[style]
 
-    # Precedence: explicit value on the line/CLI  >  style preset  >  model default (omitted).
+    # Precedence: explicit value on the line/CLI  >  style preset  >  config.toml  >  model default.
     params = {}
     for k in ("exaggeration", "cfg_weight", "temperature", "top_p", "top_k", "min_p", "repetition_penalty"):
         v = spec.get(k)
         if v is None:
             v = preset.get(k)
+        if v is None:
+            v = cfg.get(k)
         if v is not None and k in MODEL_PARAMS[model_name]:
             params[k] = v
 
     final_text = build_text(text, model_name, preset)
+    found = TAG_RE.findall(text)
+    unknown = [t for t in found if t.lower() not in VALID_TAGS] if model_name in TAG_MODELS else []
+    if found and model_name not in TAG_MODELS:
+        log(f"[speak] {model_name} has no markers: stripped {found} from the text")
+    if unknown:
+        log(f"[speak] WARNING unknown marker(s) {unknown}: Turbo may read them aloud. "
+            f"Valid: {', '.join(sorted(VALID_TAGS))}")
     voice_path = resolve_voice(voices_dir, d.get("voice"))
     name = d.get("name") or slugify(text)
     folder = out_root / name
@@ -245,7 +300,9 @@ def run_line(spec: dict, cfg: dict, styles: dict, cache: ModelCache, voices_dir:
 
         record = {
             "text": text, "sent_text": final_text, "name": name, "style": style or None,
-            "model": model_name, "voice": d.get("voice") or None,
+            "model": model_name, "model_reason": d.get("model_reason"),
+            "stripped_markers": found if (found and model_name not in TAG_MODELS) else None,
+            "unknown_markers": unknown or None, "voice": d.get("voice") or None,
             "language": d.get("language") if model_name == "multilingual" else None,
             **params, "seed": seed, "format": fmt, "trim": bool(d.get("trim")),
             "sample_rate": model.sr, "seconds": round(len(a) / model.sr, 2),
@@ -270,7 +327,8 @@ def main():
     ap.add_argument("text", nargs="?", help="the line to speak")
     ap.add_argument("--batch", help="JSON file: a list of line objects")
     ap.add_argument("--list", action="store_true", help="list models, voices and styles, then exit")
-    ap.add_argument("--model", choices=MODELS)
+    ap.add_argument("--model", choices=("auto",) + MODELS,
+                    help="default auto: markers in the text -> turbo; --exaggeration/--cfg-weight -> english; both -> stop and ask")
     ap.add_argument("--style")
     ap.add_argument("--voice", help="clip name in chatterbox/voices/, or a path")
     ap.add_argument("--language", help="multilingual model: ar da de el en es fi fr he hi it ja ko ms nl no pl pt ru sv sw tr zh")
@@ -297,7 +355,7 @@ def main():
         return list_things(voices_dir, styles)
 
     cfg = {
-        "model": "turbo", "device": "auto", "voice": "", "language": "en", "format": "wav", "takes": 1,
+        "model": "auto", "device": "auto", "voice": "", "language": "en", "format": "wav", "takes": 1,
         "trim": True, "trim_db": -45, "trim_pad_ms": 40, "peak_db": -1.0,
     }
     cfg.update(load_toml(settings / "config.toml").get("defaults", {}))
@@ -321,12 +379,25 @@ def main():
 
     out_root = Path(args.out) if args.out else cbx / "output"
     cache = ModelCache(pick_device(cfg["device"]))
-    # Group by model so each model loads once.
-    specs.sort(key=lambda s: s.get("model") or cfg["model"])
+    # Decide every line's model BEFORE generating anything, so a conflict stops the whole run early.
+    conflicts = []
     for spec in specs:
-        spec.setdefault("model", cfg["model"])
         if "text" not in spec:
             sys.exit(f"Batch entry has no 'text': {spec}")
+        try:
+            spec["model"], spec["model_reason"] = resolve_model(spec, cfg["model"])
+        except ModelConflict as e:
+            conflicts.append(str(e))
+    if conflicts:
+        print("MODEL CONFLICT (nothing was generated). Ask the user which to keep:\n  - "
+              + "\n  - ".join(conflicts)
+              + "\n  Option A: keep the markers -> --model turbo (exaggeration/cfg_weight ignored)."
+              + "\n  Option B: keep the numbers -> --model english (markers stripped from the text).",
+              file=sys.stderr)
+        sys.exit(2)
+    # Group by model so each model loads once.
+    specs.sort(key=lambda s: s["model"])
+    for spec in specs:
         run_line(spec, cfg, styles, cache, voices_dir, out_root)
 
 

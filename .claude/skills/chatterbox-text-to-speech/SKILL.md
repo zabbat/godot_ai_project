@@ -119,19 +119,65 @@ Report what was installed (Python, torch, GPU, model) and that `voices/` is git-
 
 ## Generating speech
 
+### The three things to ask for
+
+Every line is defined by three controls. When the user asks for a line, get these (infer what is
+obvious from the request, ask only what blocks you, and state what you chose):
+
+1. **Voice**: a reference clip in `voices/` (`--voice NAME`), or none for the model's built-in
+   voice. Chatterbox **cannot invent a voice from a description**. If the user describes one
+   ("old gravelly wizard"), match it against the descriptions in the voices table in
+   `chatterbox/AGENTS.md` and pick the closest clip; if none fits, say so and ask for a clip.
+2. **Exaggeration** (`--exaggeration`): emotional intensity. 0.25 flat, 0.5 normal, 0.7 warm, 1.0+ theatrical.
+3. **CFG** (`--cfg-weight`): roughly pace. Lower is slower and more deliberate (0.2-0.3), 0.5 is
+   normal, higher is faster. Note that high exaggeration also speeds speech up, so intense lines usually want a lower CFG.
+
+These two numbers only exist on the **`english`** and **`multilingual`** models. `turbo`/`nano` ignore them. Everything
+else (temperature, seed, takes, the wording of the text) is secondary tuning.
+
+### Which model runs: the routing rule
+
+By default (`model = "auto"` in `config.toml`), `speak.py` picks the model **per line** from what
+the user wrote. This is the user's rule; keep it exactly:
+
+| The user's request has | Model | Why |
+|---|---|---|
+| **markers** in the text (`[laugh]`, `[angry]`, `[sigh]`...) and **no** exaggeration/pace | `turbo` | only Turbo understands markers |
+| **exaggeration and/or pace** (cfg) and **no** markers | `english` | only English uses those numbers |
+| **both** markers and exaggeration/pace | **stop and ask the user** | Turbo ignores the numbers; English cannot use markers |
+| neither | `english` (`multilingual` if `--language` is not `en`) | default |
+| `--model X` named | X | an explicit choice always wins |
+
+Only what the user put on that line counts as "given". A `--style` preset or `config.toml` does not
+count (a preset carries both a tag and numbers; it alone means `english`).
+
+**On a conflict the script exits with code 2 and generates nothing.** Then ask the user, in plain
+words, which to keep: (A) keep the markers, run Turbo, pace/exaggeration are ignored; or (B) keep
+the numbers, run English, markers are removed from the text. Then rerun with `--model turbo` or
+`--model english`. Do not choose for them. In a batch, every line is checked first, so one conflict stops the whole run before any audio is made.
+
+Before running, tidy the markers the user typed: Turbo only knows the **exact** names
+`[angry] [fear] [surprised] [whispering] [dramatic] [narration] [advertisement] [happy] [crying]
+[sarcastic] [laugh] [chuckle] [sigh] [gasp] [groan] [cough] [clear throat] [sniff] [shush]`.
+A near-miss such as `[laughter]` or `[shouting]` is still a "marker" for routing (it selects Turbo or
+causes the conflict), but Turbo may read it aloud, so map obvious ones to the exact tag
+(`[laughter]` -> `[laugh]`) and tell the user; for one with no equivalent (`[shouting]`), say so
+and suggest CAPITALS or `[angry]`. The script warns about unknown markers on stderr, and records
+`unknown_markers`, `model_reason` and (when English strips markers) `stripped_markers` in each take's `.json`.
+
 ### Choosing a model (`--model`)
 
 | Model | Use for | Emotion controls | Notes |
 |---|---|---|---|
-| `turbo` (default) | English game dialogue, barks, anything needing emotion or sounds | **style tags** + sound tags in the text, voice clip, temperature | 350M, fast. Tags: see the style reference. Ignores `exaggeration`/`cfg_weight`. |
-| `english` | English when you want to dial intensity continuously | `exaggeration`, `cfg_weight`, temperature | 500M, original model. Use for fine control of how theatrical a line is. |
+| `english` (auto picks it by default) | English game dialogue where you want to set exaggeration and CFG yourself | `exaggeration`, `cfg_weight`, temperature | 500M, original model. |
+| `turbo` | English lines that need sounds (`[laugh]`, `[sigh]`, `[gasp]`) or tag-driven emotion; faster | **style tags** + sound tags in the text, voice clip, temperature | 350M. Tags: see the style reference. **Ignores `exaggeration`/`cfg_weight`.** |
 | `multilingual` | Other languages (23) and localisation: `--language fr` | `exaggeration`, `cfg_weight` | V3, 500M. Reference clip should match the language, or set `--cfg-weight 0`. |
 | `nano` | CPU-only machines, quick drafts | tags like Turbo | 110M, smaller and lower quality. |
 
 All models run without a reference clip (built-in voice). To fix a character's voice, pass `--voice`; Turbo/Nano need a clip longer than 5 s.
 
-Default to `turbo` for English. Use `multilingual` for any other language. Switch to `english` when a
-Turbo take cannot reach the intensity wanted. Each model downloads its own weights on first use.
+Leave the model on `auto` (the routing rule above) unless the user names one. `multilingual` is
+chosen for any language other than `en`. Each model downloads its own weights on first use.
 
 ### One line
 
@@ -145,7 +191,7 @@ Options (all optional; command-line values beat the style preset, which beats th
 |---|---|
 | `--style NAME` | preset from `settings/styles.toml` (`--list` shows them) |
 | `--voice NAME` | clip in `chatterbox/voices/` (no extension) or a file path; omit for the model's built-in voice |
-| `--model`, `--language` | see the table above |
+| `--model`, `--language` | `auto` by default (routing rule above); name a model to force it |
 | `--name SLUG` | output folder and file stem; default: first words of the text. Use short kebab-case |
 | `--takes N` | N different takes of the same line (seeds differ) |
 | `--seed N` | fixed seed to reproduce a take (take *i* uses N+*i*) |
@@ -158,7 +204,9 @@ Options (all optional; command-line values beat the style preset, which beats th
 
 Output: `chatterbox/output/<name>/<name>-<nr>.wav` and `<name>-<nr>.json` (text, the tag-expanded
 text that was sent, model, style, voice, all parameters, **seed**, seconds). `<nr>` counts up, so
-nothing is overwritten. stdout gets one JSON line per take with the path; progress goes to stderr.
+nothing is overwritten. stdout gets one JSON line per take with the path (plus a few plain library
+lines: keep only lines starting with `{`); progress goes to stderr. For a batch, redirect stdout
+to a file (`> gen.log 2> gen.err`) instead of piping it to a script that could crash and kill the run.
 
 ### Many lines (batch) — the normal way for dialogue
 
@@ -181,12 +229,14 @@ Command-line options act as defaults for every entry. To redo or tweak a take, p
 
 1. **Understand the line**: who speaks, to whom, in what state, where in the game (bark, cutscene, UI). If
    the user gives only text, pick the style yourself from `references/game_voice_styles.md` and say which.
-2. **Ask only what blocks you**: which voice clip, if several exist and it is not obvious. Otherwise
-   proceed with defaults and the built-in voice.
+2. **Settle the three controls** (voice, exaggeration, CFG; see above). Take values the user gives
+   literally. If they give none, pick from a style preset or the table in the style reference and
+   say the numbers. Ask only if the voice is unclear and several clips exist; otherwise proceed
+   with the built-in voice.
 3. **Generate 2-3 takes** of anything that matters; one for quick tests. **Variants** for anything players hear often: 4-8 different wordings and seeds (see the reference).
 4. **Show the result**, say what you chose (model, style, voice, seed) and offer the next
    adjustment in plain words ("angrier", "slower", "less theatrical", "another take").
-5. **Iterate on the right knob** (reference: "Judging and fixing a take"). Change one thing at a time; keep the seed when comparing a setting, change it when you want a different performance.
+5. **Iterate on the right knob** (reference: "Judging and fixing a take"). Change one thing at a time; keep the seed when comparing a setting, change it when you want a different performance. To compare settings fairly, run the same text and `--seed` with different `--exaggeration` / `--cfg-weight` values and name each take (`--name line-ex08-cfg03`).
 
 Generation uses the user's GPU: confirm before running big batches (roughly more than 20 lines).
 
@@ -237,7 +287,7 @@ delivery recurs ("old-wizard", "radio-operator"); do not edit presets the user d
 - **First run is slow** (weights). A hang after "loading model" for minutes is the download, not a crash.
 - **Out of GPU memory**: lower to one model at a time (the script does), close other GPU apps, or use `nano`/`--device cpu` via `config.toml`.
 - **Turbo ignores** `exaggeration` and `cfg_weight`; passing them logs a warning. Use a tag, wording, voice, temperature.
-- **Tags only exist on Turbo/Nano.** On English/Multilingual a `[laugh]` would be read as words; the script only adds preset tags for Turbo/Nano, but raw tags you type stay in the text, so remove them when switching models.
+- **Markers only exist on Turbo/Nano.** When English/Multilingual is chosen explicitly (`--model english`) and the text has `[markers]`, the script strips them (with a note) instead of speaking them. Auto routing never gets there: markers mean Turbo or a conflict.
 - **Long text drifts**: split above ~40 words, one line per sentence.
 - **Run with the project's environment only** (`uv run --project chatterbox/settings`). Do not `pip install` into any other Python, and do not edit `uv.lock` by hand.
 - After changing dependencies or the backend, run `uv lock` then `uv sync` in the same way and commit the new `uv.lock`.
