@@ -134,9 +134,8 @@ obj.location.z = 0          # then stand it on the ground
 ```python
 import bpy
 def material(name, color, metallic=0.0, roughness=0.5, emission=None, strength=1.0):
-    mat = bpy.data.materials.get(name) or bpy.data.materials.new(name)
-    mat.use_nodes = True
-    bsdf = mat.node_tree.nodes["Principled BSDF"]
+    mat = bpy.data.materials.get(name) or bpy.data.materials.new(name)   # comes with Principled + Output nodes
+    bsdf = next(n for n in mat.node_tree.nodes if n.type == 'BSDF_PRINCIPLED')   # by type: names are translated
     bsdf.inputs["Base Color"].default_value = (*color, 1.0)
     bsdf.inputs["Metallic"].default_value = metallic
     bsdf.inputs["Roughness"].default_value = roughness
@@ -158,8 +157,11 @@ import bpy
 mat = bpy.data.materials["Wood"]
 nt = mat.node_tree
 tex = nt.nodes.new("ShaderNodeTexImage")
-tex.image = bpy.data.images.load("/refs/wood_albedo.png")
-nt.links.new(tex.outputs["Color"], nt.nodes["Principled BSDF"].inputs["Base Color"])
+tex.image = bpy.data.images.load("/refs/wood_albedo.png")   # colour map: keep sRGB
+bsdf = next(n for n in nt.nodes if n.type == 'BSDF_PRINCIPLED')
+nt.links.new(tex.outputs["Color"], bsdf.inputs["Base Color"])
+# data maps (roughness, metallic, normal, AO): tex.image.colorspace_settings.name = 'Non-Color'
+# normal map: image -> ShaderNodeNormalMap "Color" -> bsdf "Normal"
 ```
 
 Per-face materials: append several materials, then set `polygon.material_index`.
@@ -185,11 +187,12 @@ cb = anim_utils.action_get_channelbag_for_slot(action, obj.animation_data.action
 for fc in cb.fcurves:
     for kp in fc.keyframe_points:
         kp.interpolation = 'LINEAR' if fc.data_path == "rotation_euler" else 'BEZIER'
-    fc.modifiers.new('CYCLES')          # repeat forever
+    fc.modifiers.new('CYCLES')          # repeats in Blender's preview only - NOT exported
+action.use_fake_user = True
 result = {"action": action.name, "fcurves": [(fc.data_path, fc.array_index) for fc in cb.fcurves]}
 ```
 
-For a seamless loop the last key equals the first and sits one frame **after** `frame_end` (key 49, range 1–48).
+For a seamless loop the last key equals the first (a full 0→2π turn counts) and sits one frame **after** `frame_end` (key 49, range 1–48). The `CYCLES` modifier only makes Blender's timeline repeat; glTF/Godot get the keys, so the loop must be in the keys. Rules for game clips, loops, baking and slots: `animation.md`.
 
 ## Armature, skinning, pose animation
 
@@ -225,16 +228,18 @@ Bone heat can fail on bad geometry ("Bone Heat Weighting: failed") — check tha
 One named action per clip, pushed to the NLA so every clip survives saving and is exported:
 
 ```python
-import bpy
+import bpy, mathutils
 rig = bpy.data.objects["Rig"]
 def make_clip(name, keys):            # keys: {frame: {bone: (x, y, z) euler radians}}
     rig.animation_data_create()
     rig.animation_data.action = bpy.data.actions.new(name)
     for frame, pose in keys.items():
         for bone, rot in pose.items():
-            pb = rig.pose.bones[bone]; pb.rotation_mode = 'XYZ'; pb.rotation_euler = rot
-            pb.keyframe_insert("rotation_euler", frame=frame, group=bone)
+            pb = rig.pose.bones[bone]; pb.rotation_mode = 'QUATERNION'      # quaternions blend cleanly in games
+            pb.rotation_quaternion = mathutils.Euler(rot).to_quaternion()
+            pb.keyframe_insert("rotation_quaternion", frame=frame, group=bone)
     act = rig.animation_data.action
+    act.use_fake_user = True                                          # survives saving even if unused
     track = rig.animation_data.nla_tracks.new(); track.name = name
     track.strips.new(name, int(act.frame_range[0]), act)
     rig.animation_data.action = None
@@ -246,7 +251,7 @@ make_clip("Bow", {1: {"Mid": (0, 0, 0)}, 10: {"Mid": (1.2, 0, 0)}, 20: {"Mid": (
 result = {"actions": [a.name for a in bpy.data.actions], "tracks": [t.name for t in rig.animation_data.nla_tracks]}
 ```
 
-Names: Godot imports clips whose name ends in `-loop` (or `-cycle`) as looping.
+Names: Godot imports clips whose name starts or ends with `loop` (or `cycle`) as looping. Baking IK/constraints into clips, root motion, loop checks: `animation.md`.
 
 ## Preview render (check your work)
 
