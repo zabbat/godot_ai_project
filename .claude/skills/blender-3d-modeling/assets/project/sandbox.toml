@@ -1,0 +1,17 @@
+# Blender MCP sandbox settings for this project.
+# Read by .claude/skills/blender-3d-modeling/assets/docker/run_sandbox.py every time Claude Code
+# starts the "blender" MCP server (.mcp.json). After editing: restart Claude Code.
+#
+# Each [[share]] is one project folder the sandboxed Blender can see:
+#   path   = folder relative to the project root (created if missing)
+#   mount  = where Blender sees it inside the sandbox (/name)
+#   access = "rw" (read and write) or "ro" (read only: Blender can open but not change or delete)
+# Not allowed: the project root, .git, .claude, .mcp.json, blender/config, godot, tools.
+
+image = "blender-mcp-sandbox"
+memory = "8g"
+
+[[share]]
+path = "blender/models"
+mount = "/models"
+access = "rw"

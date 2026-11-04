@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "blender": {
+      "type": "stdio",
+      "command": "uv",
+      "args": [
+        "run",
+        "--quiet",
+        "${CLAUDE_PROJECT_DIR:-.}/.claude/skills/blender-3d-modeling/assets/docker/run_sandbox.py"
+      ],
+      "env": {}
+    }
+  }
+}

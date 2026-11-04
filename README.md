@@ -46,6 +46,7 @@ The destination must be empty or not exist yet.
 | `godot-development` | skill | Repo and Godot project conventions; holds the canonical `export_assets.py`, `check_sync.py` and asset-map starters |
 | `godot-shader-effects` | skill | Writing shaders and visual effects, with example `.gdshader` files |
 | `glb-3d-model-and-animations` | skill | Bringing rigged glTF/GLB models and animations into Godot |
+| `blender-3d-modeling` | skill | Modeling, animating and exporting in Blender through the Blender MCP, sandboxed in Docker or a VM; sets a project up with its own `.mcp.json` and `blender/` folder (Dockerfile and launcher in its `assets/docker/`) |
 | `comfy-ui-asset-generation` | skill | Generating images with a local ComfyUI server |
 | `comfy-ui-audio-generation` | skill | Generating sounds with a local ComfyUI Stable Audio graph |
 | `godot-resource-manager` | agent | Syncs assets into Godot and updates the docs from the Godot project |
