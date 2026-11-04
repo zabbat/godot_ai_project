@@ -1,14 +1,18 @@
 ---
 name: comfy-ui-asset-generation
-description: Drive a local ComfyUI server — save the current workflow + prompt to local files, and generate images on request. Use when the user says "save" (a ComfyUI setup), "generate image", or "generate new image", or otherwise asks to capture/run ComfyUI prompts, LoRAs, or settings.
+description: Drive a local ComfyUI server — save the current workflow + prompt to local files, generate images on request, and cut a character out of an image (transparent background). Use when the user says "save" (a ComfyUI setup), "generate image", "generate new image", "cut out", "remove the background" or "make it transparent", or otherwise asks to capture/run ComfyUI prompts, LoRAs, or settings.
 ---
 
 # ComfyUI support
 
 Helps run and archive image generation for the current project. ComfyUI runs locally and
 holds the creative settings (model, LoRAs, sampler, seed, prompt) as a node graph
-("workflow"). This skill saves that workflow + prompt to readable local files and
-generates images on command.
+("workflow"). This skill saves that workflow + prompt to readable local files,
+generates images on command, and cuts characters out of images (transparent background,
+see "cut out").
+
+Files in this skill's folder: `scripts/cutout.py` (the cut-out run) and
+`templates/cutout_transparent.json` (the same graph as a ComfyUI canvas workflow).
 
 If the project has a 2D style doc (`docs/style/2d_style.md`), follow it when writing prompts:
 it holds the style keywords, LoRA and settings for each kind of 2D art. If the part you need
@@ -120,6 +124,46 @@ Same as "generate image" but: `xxx` = max + 1, `nr` = 1, create a fresh
 (the `Asset:`/`Notes:` file) plus the first per-image `<xxx>-asset-1-<description>.md`.
 Derive a 2–3 word `description` slug from the prompt/asset and tell the user (they can rename).
 End by **displaying the image** (see below).
+
+### "cut out"  → transparent background for a character
+Removes the background around a person or character, giving a PNG with alpha (for art
+placed straight on a game screen). Fully local; it uses nodes and models that must already
+be installed (the script checks and names anything missing):
+- Impact Pack + Impact Subpack nodes (`UltralyticsDetectorProvider`, `SAMLoader`,
+  `ImpactSimpleDetectorSEGS`, `SegsToCombinedMask`) and core mask nodes.
+- `models/ultralytics/segm/person_yolov8m-seg.pt` and `models/sams/sam_vit_h_4b8939.pth`.
+
+1. **Pick the source** — usually a take of the current asset ("cut out image 2" →
+   `<xxx>-asset-2-<description>.png`). It cuts best when the figure was drawn on a **plain
+   flat background in a colour the figure doesn't have** (e.g. dark slate blue behind white
+   clothes); when generating art meant for cutting out, say so in the prompt (see the
+   project's style doc, if any, for its cut-out rules).
+2. **Run** `scripts/cutout.py` (in this skill's folder) with ComfyUI's Python:
+   ```
+   <python.exe> -I <skill>/scripts/cutout.py <source.png> <out.png> --graph-out <graph.json>
+   ```
+   Options: `--shrink N` (px the mask shrinks to drop a fringe of background colour,
+   default 1), `--blur S` (edge blur sigma, default 1.0; lower = harder edge).
+   The graph: YOLO person segmentation → SAM refines the outline → combined mask → shrink
+   1 px → slight blur → invert (JoinImageWithAlpha turns `1 - mask` into alpha) → join
+   with the image as alpha → save PNG.
+3. **Save it as the next take** of the same asset: `<xxx>-asset-<nr>-<description>.png`,
+   with a per-image `.md` naming the source take, the script options and the steps (the
+   template below, with `Source:` and `Cutout:` lines instead of the prompt). Keep the
+   graph next to it as `<xxx>-asset-<description>-cutout_api.json` (drag it onto the canvas
+   to load it).
+4. **Check the edge**: composite the PNG over a bright colour (e.g. red) and zoom on the
+   hair. A visible ring of the old background colour → raise `--shrink` to 2; a jagged edge
+   → raise `--blur`; missing thin strands are expected with this method.
+5. **Display** it (see below).
+
+The same graph is saved as a canvas workflow in `templates/cutout_transparent.json`. If the
+user wants it in ComfyUI's workflow list and it isn't there yet, copy it to
+`ComfyUI/user/default/workflows/` (load an image in its Load Image node before running).
+
+For finer hair edges ComfyUI's built-in **RemoveBackground** node (BiRefNet) is better, but
+it needs a BiRefNet model in `models/background_removal/`; ask the user before downloading
+one.
 
 ## Display the finished image
 
