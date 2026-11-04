@@ -1,6 +1,6 @@
 ---
 name: godot-development
-description: How to structure a Godot 4 game repository and project - the split between the AI side (docs, prototype, source assets, skills) and the Godot side, keeping every game fact in the docs so the Godot project can be rebuilt, the asset map from source assets to Godot files, and inside Godot the folder layout, scene composition, custom Resources, shaders and materials, audio, autoloads, signals and naming. Use when adding or reorganizing anything in the repo or the Godot project, adding an image, model or sound, changing game data, or deciding where a new file or fact belongs.
+description: How to structure a Godot 4 game repository and project - the split between the AI side (docs, prototype, source assets, skills) and the Godot side, keeping every game fact in the docs so the Godot project can be rebuilt, the asset map from source assets to Godot files, and inside Godot the folder layout, scene composition, custom Resources, shaders and materials, audio, autoloads, signals and naming, and testing the exported build (APK) as well as the editor. Use when adding or reorganizing anything in the repo or the Godot project, adding an image, model or sound, changing game data, deciding where a new file or fact belongs, or testing an export or a bug seen only on a device.
 ---
 
 # Godot development
@@ -339,6 +339,18 @@ Keep autoloads few (event bus, game state, audio, scene manager). Don't put per-
 - Declare signals with typed arguments and past-tense names (`died`, `health_changed(new, max)`).
 - Use groups (`add_to_group("mobs")`) for cheap "find all of kind X" queries and collision layers/masks (named in Project Settings) for physics interactions.
 - Prefer `_physics_process` for movement and `_process` for visuals; disable processing (`set_process(false)`) on idle nodes.
+- Never `preload` a resource whose script depends back on the script doing the preloading (directly, or through classes it uses). The editor resolves the cycle; an exported build does not, the script fails to compile, and everything built on it breaks on the device only. `load()` it at run time instead (for example a static getter that loads on first use).
+
+## Testing the exported build
+
+The editor and headless runs with `--path` use the project's text scripts and resources. An export ships binary scripts and resources, and those can fail where the editor works. **When the user asks to test for export (or "on the phone", "the APK", a build), or reports a bug only seen on a device, also test the exported version**, not only the project:
+
+1. **The build the user has**: an APK (or other export) is a zip. Find it at the preset's `export_path` in `export_presets.cfg`, extract its `assets/` folder to a scratch folder, and run it headless with a test script: `"$GODOT" --headless --path <extracted>/assets -s <test.gd>`. This runs exactly the files the device runs.
+2. **A fresh build of the current code**: `"$GODOT" --headless --path <project> --export-pack "<preset>" <out.pck>`, then run it from an empty folder with `"$GODOT" --headless --main-pack <out.pck> -s <test.gd>`. For a full APK, use `--export-debug "<preset>" <out.apk>` and test it as in step 1.
+3. **A device over USB** (if `adb devices` lists one): `adb install -r <apk>`, start the app, and read `adb logcat -s godot` for script errors.
+4. Treat any `SCRIPT ERROR` or failed resource load in these runs as a failure, even if the editor run was clean. Fix it, export again and re-run before reporting the build as working.
+
+Test scripts follow the same rules as any headless run: a real-time watchdog that quits, no project class names in the test script (use duck typing), and stopping at the first error. Typical export-only failures: preload cycles (see Scripts), files left out by the export filter, listing `res://` folders with `DirAccess` (exported files are renamed `.remap`/`.import`), wrong upper/lower case in paths (Android is case-sensitive), and editor-only classes used in game code.
 
 ## Checklist when adding something new
 
@@ -353,3 +365,4 @@ Keep autoloads few (event bus, game state, audio, scene manager). Don't put per-
 9. Run the scene alone (F6) to verify it works without its parent.
 10. Keep names consistent with the design docs, and update the `AGENTS.md` index of any folder where you added or renamed a file.
 11. Did you add, move or remove a folder or key file in the Godot project? Update `prototype/godot_structure.md`.
+12. Is it going onto a device, or did the user ask to test the export? Test the exported build too (see [Testing the exported build](#testing-the-exported-build)).
