@@ -49,6 +49,7 @@ The destination must be empty or not exist yet.
 | `blender-3d-modeling` | skill | Modeling, animating and exporting in Blender through the Blender MCP, sandboxed in Docker or a VM; sets a project up with its own `.mcp.json` and `blender/` folder (Dockerfile and launcher in its `assets/docker/`) |
 | `comfy-ui-asset-generation` | skill | Generating images with a local ComfyUI server |
 | `comfy-ui-audio-generation` | skill | Generating sounds with a local ComfyUI Stable Audio graph |
+| `chatterbox-text-to-speech` | skill | Local voice lines with Chatterbox: emotional styles, cloned character voices, batches; `init chatterbox` installs it with uv into a `chatterbox/` folder (locked Python 3.11 in `settings/`, git-ignored `voices/`) |
 | `godot-resource-manager` | agent | Syncs assets into Godot and updates the docs from the Godot project |
 
 ## Requirements
@@ -56,7 +57,8 @@ The destination must be empty or not exist yet.
 - Claude Code
 - Godot 4 (GDScript only)
 - Python 3.11+ with Pillow, and `ffmpeg`, to run the export and sync scripts
-- A local ComfyUI server, only for the generation skills
+- A local ComfyUI server, only for the ComfyUI generation skills
+- `uv` and `git`, only for `chatterbox-text-to-speech` (an NVIDIA GPU is recommended)
 
 ## Changing the template
 

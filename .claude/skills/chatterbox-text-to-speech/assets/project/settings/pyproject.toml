@@ -1,0 +1,33 @@
+# uv project that locks Chatterbox's Python and packages for this repo.
+# Run things with:  uv run --project chatterbox/settings <script>
+# The environment (.venv) lives next to this file and is git-ignored; uv.lock IS committed.
+#
+# TORCH BACKEND: "cu128" works for every NVIDIA GPU with driver >= 570 (including RTX 50xx
+# Blackwell, which needs it). On a machine without an NVIDIA GPU, change both occurrences of
+# "cu128" below to "cpu" (the init procedure in SKILL.md does this for you), then `uv lock`.
+[project]
+name = "chatterbox-settings"
+version = "0.1.0"
+description = "Locked Python + packages for local Chatterbox text-to-speech"
+requires-python = "==3.11.*"
+dependencies = [
+    "chatterbox-tts",
+    "torch",
+    "torchaudio",
+]
+
+[tool.uv]
+# chatterbox-tts pins torch==2.6.0, which has no cu128 wheels (RTX 50xx would fail with
+# "no kernel image"). Override the pin; 2.8.0 is the last torchaudio line whose API
+# Chatterbox is known to work with.
+override-dependencies = ["torch==2.8.0", "torchaudio==2.8.0"]
+
+[tool.uv.sources]
+chatterbox-tts = { git = "https://github.com/resemble-ai/chatterbox.git", rev = "ab55923c27757c90cfcc407baa57dc25a7d25217" }
+torch = { index = "pytorch-cu128" }
+torchaudio = { index = "pytorch-cu128" }
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true

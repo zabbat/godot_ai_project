@@ -1,0 +1,10 @@
+# Reference voices (may be recordings of real people, can be large)
+voices/*
+!voices/.gitkeep
+
+# Generated lines are a workshop; promote chosen takes into assets/
+output/
+
+# uv environment (uv.lock and pyproject.toml ARE committed)
+settings/.venv/
+__pycache__/

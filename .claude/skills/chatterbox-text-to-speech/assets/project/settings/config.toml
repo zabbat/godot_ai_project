@@ -1,0 +1,13 @@
+# Defaults for speak.py. Command-line options override these.
+
+[defaults]
+model = "turbo"      # turbo | english | multilingual | nano  (see SKILL.md "Choosing a model")
+device = "auto"      # auto | cuda | cpu | mps
+voice = ""           # name of a clip in chatterbox/voices/ (no extension); "" = the model's built-in voice
+language = "en"      # only used by the multilingual model
+format = "wav"       # wav | ogg | mp3  (ogg/mp3 need ffmpeg on PATH)
+takes = 1            # takes per line; each gets its own seed
+trim = true          # cut leading/trailing silence (good for barks and UI lines)
+trim_db = -45        # silence threshold in dBFS
+trim_pad_ms = 40     # silence kept at each end after trimming
+peak_db = -1.0       # peak-normalise to this level; set to 0 to disable

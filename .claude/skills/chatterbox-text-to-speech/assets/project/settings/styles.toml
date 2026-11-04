@@ -1,0 +1,162 @@
+# Style presets for speak.py  (--style NAME).  Edit freely; add your own game-specific ones.
+#
+# Every preset can set:
+#   tag          Turbo/Nano only: a style tag put in front of the text, e.g. "[angry]".
+#                Turbo's style tags: [angry] [fear] [surprised] [whispering] [dramatic]
+#                [narration] [advertisement] [happy] [crying] [sarcastic]
+#   exaggeration English/Multilingual only: 0.25 flat ... 0.5 normal ... 1.0+ theatrical.
+#   cfg_weight   English/Multilingual only: lower = slower, more deliberate pacing (0.2-0.5).
+#   temperature  All models: higher = more varied/unstable delivery (0.6-1.0).
+#   prefix / suffix  Plain text added around the line (e.g. "[sigh] " for sound tags, or "...").
+# Settings that a model does not use are ignored for that model, so one preset works everywhere.
+# Turbo ignores exaggeration and cfg_weight entirely; its emotion comes from tags and wording.
+# Anything given on the command line (--exaggeration 0.8) wins over the preset.
+
+[neutral]
+description = "Plain, even delivery. The baseline."
+exaggeration = 0.5
+cfg_weight = 0.5
+temperature = 0.8
+
+[happy]
+description = "Warm and pleased. Shopkeepers, friendly NPCs, quest givers."
+tag = "[happy]"
+exaggeration = 0.7
+cfg_weight = 0.4
+temperature = 0.85
+
+[excited]
+description = "Fast, high energy. Pickups, wins, hype commentary."
+tag = "[happy]"
+exaggeration = 1.0
+cfg_weight = 0.3
+temperature = 0.9
+
+[sad]
+description = "Low, slow, heavy. Loss, farewells, grief."
+tag = "[crying]"
+exaggeration = 0.35
+cfg_weight = 0.6
+temperature = 0.75
+
+[crying]
+description = "Tearful, breaking voice."
+tag = "[crying]"
+exaggeration = 0.8
+cfg_weight = 0.3
+temperature = 0.9
+
+[angry]
+description = "Hard, clipped, loud. Enemies, rivals, boss taunts."
+tag = "[angry]"
+exaggeration = 0.9
+cfg_weight = 0.3
+temperature = 0.9
+
+[furious]
+description = "Over the edge. Boss phase change, rage."
+tag = "[angry]"
+exaggeration = 1.3
+cfg_weight = 0.2
+temperature = 1.0
+
+[fear]
+description = "Frightened, shaky, breathy. Cowering civilians, horror."
+tag = "[fear]"
+exaggeration = 0.9
+cfg_weight = 0.3
+temperature = 0.9
+
+[terrified]
+description = "Panic. Screams-adjacent, short broken phrases work best."
+tag = "[fear]"
+exaggeration = 1.3
+cfg_weight = 0.2
+temperature = 1.0
+
+[surprised]
+description = "Startled reaction. Ambush, discovery, plot twist."
+tag = "[surprised]"
+exaggeration = 0.9
+cfg_weight = 0.3
+temperature = 0.9
+
+[whisper]
+description = "Hushed, close to the mic. Stealth, secrets, ASMR-style narration."
+tag = "[whispering]"
+exaggeration = 0.4
+cfg_weight = 0.5
+temperature = 0.7
+
+[sarcastic]
+description = "Dry, mocking. Snarky companions, shopkeepers who hate their job."
+tag = "[sarcastic]"
+exaggeration = 0.6
+cfg_weight = 0.5
+temperature = 0.85
+
+[dramatic]
+description = "Theatrical and weighty. Villain monologues, prophecies, cutscenes."
+tag = "[dramatic]"
+exaggeration = 0.9
+cfg_weight = 0.25
+temperature = 0.85
+
+[narration]
+description = "Storyteller. Intro crawls, codex entries, loading-screen lore."
+tag = "[narration]"
+exaggeration = 0.5
+cfg_weight = 0.45
+temperature = 0.75
+
+[announcer]
+description = "Big, bright, promotional. Round start, game show, shop ads, tutorial."
+tag = "[advertisement]"
+exaggeration = 0.8
+cfg_weight = 0.4
+temperature = 0.8
+
+[tired]
+description = "Weary, sighing. Veteran guards, burnt-out NPCs, low-health lines."
+prefix = "[sigh] "
+exaggeration = 0.35
+cfg_weight = 0.6
+temperature = 0.75
+
+[villain]
+description = "Slow, relishing menace. Pair with a deep reference voice."
+tag = "[dramatic]"
+exaggeration = 0.8
+cfg_weight = 0.2
+temperature = 0.8
+
+[evil-laugh]
+description = "A laugh line that opens with a laugh."
+tag = "[dramatic]"
+prefix = "[laugh] "
+exaggeration = 1.0
+cfg_weight = 0.25
+temperature = 0.95
+
+[battle-cry]
+description = "Short shouted charge or attack bark (keep the text to 1-4 words)."
+tag = "[angry]"
+exaggeration = 1.4
+cfg_weight = 0.2
+temperature = 1.0
+
+[pain]
+description = "Hit reaction, grunt-and-gasp. Use 1-3 words."
+tag = "[fear]"
+prefix = "[groan] "
+exaggeration = 1.0
+cfg_weight = 0.2
+temperature = 1.0
+
+[dying]
+description = "Last breath. Short; ends on a fading sigh."
+tag = "[crying]"
+suffix = " [sigh]"
+exaggeration = 0.6
+cfg_weight = 0.5
+temperature = 0.9
