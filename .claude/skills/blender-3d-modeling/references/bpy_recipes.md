@@ -1,6 +1,6 @@
 # bpy recipes (Blender 5.1)
 
-Snippets for `execute_blender_code_for_cli(blend_file, code)` (or `execute_blender_code` in a VM). Each call is a fresh Blender process with `blend_file` open: **end every changing call with a save**, and assign a dict to `result`. All snippets were run headless in the Docker sandbox on Blender 5.1.2. Paths are sandbox paths: `/models/...` is the default share (`blender/models/`); `/export` and `/refs` are examples of extra shares from `blender/config/sandbox.toml`.
+Snippets for `execute_blender_code_for_cli(blend_file, code)` (or `execute_blender_code` in a VM). Each call is a fresh Blender process with `blend_file` open: **end every changing call with a save**, and assign a dict to `result`. All snippets were run headless in the Docker sandbox on Blender 5.1.2. Paths are sandbox paths: `/models/...` is the default share (`<Blender folder>/models/`, e.g. `tools/blender/models/`); `/export` and `/refs` are examples of extra shares from its `config/sandbox.toml`.
 
 When something here fails on a newer Blender, check `search_api_docs` and fix this file.
 

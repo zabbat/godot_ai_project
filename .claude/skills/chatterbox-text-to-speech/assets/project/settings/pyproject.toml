@@ -1,5 +1,5 @@
 # uv project that locks Chatterbox's Python and packages for this repo.
-# Run things with:  uv run --project chatterbox/settings <script>
+# Run things with:  uv run --project <cbx>/settings <script>
 # The environment (.venv) lives next to this file and is git-ignored; uv.lock IS committed.
 #
 # TORCH BACKEND: "cu128" works for every NVIDIA GPU with driver >= 570 (including RTX 50xx

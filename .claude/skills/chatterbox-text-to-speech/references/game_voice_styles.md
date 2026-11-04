@@ -77,7 +77,7 @@ padding or oddities: use 2-3 words or keep several takes.
 
 Spell out what must be read exactly: numbers ("two hundred"), acronyms ("S O S"),
 and unusual names (respell phonetically: "Zy-ra" for Zyra). Keep a respelling list
-for recurring names in `chatterbox/AGENTS.md` so every line pronounces them the same.
+for recurring names in `<cbx>/AGENTS.md` so every line pronounces them the same.
 
 ## Line types for a game
 
@@ -110,7 +110,7 @@ You only need a handful of reference clips; vary the character with style:
 - Pitch/age/size come from the reference, not from settings. For a monster or a child, use a clip that is already like that. Post-process (ffmpeg `asetrate`, `atempo`, `aecho`) for creatures, robots, radios, if needed.
 - For a "chorus" of NPCs, mix 3-4 clips with different pitch and gender and rotate them by NPC id.
 
-## Reference clips (`chatterbox/voices/`)
+## Reference clips (`<cbx>/voices/`)
 
 - 6-15 s, one speaker, **clean** (no music, no echo, no background talk), mono or stereo
   WAV/MP3/FLAC. Turbo needs more than 5 s.

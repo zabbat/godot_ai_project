@@ -1,14 +1,20 @@
 ---
-name: comfy-ui-audio-generation
-description: Drive a local ComfyUI server running a Stable Audio graph — generate sound effects, one-shots, instrument loops and music, and save each sound with an .md of its prompt and settings. Use when the user says "generate sound", "generate new sound", "make a sound effect", "save" (a ComfyUI audio setup), or otherwise asks to create or capture game audio with ComfyUI.
+name: comfy-ui-sound-effects
+description: Drive a local ComfyUI server running a Stable Audio graph to make game sound effects — impacts, weapon and spell sounds, creature grunts and cries, UI clicks and pickups, short actions, ambience loops — and save each sound with an .md of its prompt and settings. Use when the user says "generate sound", "generate new sound", "make a sound effect", "save" (a ComfyUI audio setup), or otherwise asks to create or capture sound effects with ComfyUI. Not for music or spoken voice lines (chatterbox-text-to-speech does speech).
 ---
 
-# ComfyUI audio generation
+# ComfyUI sound effects
 
-Generates and archives game audio for the current project. ComfyUI runs locally and holds a
-Stable Audio graph (model, text encoders, sampler, seed, prompt, length). This skill reads that
-graph, sets the prompt and settings, renders the sound, and saves it with a readable record of
-what produced it. It is the audio twin of the `comfy-ui-asset-generation` skill.
+Generates and archives game sound effects for the current project. ComfyUI runs locally and
+holds a Stable Audio graph (model, text encoders, sampler, seed, prompt, length). This skill reads
+that graph, sets the prompt and settings, renders the sound, and saves it with a readable record
+of what produced it. It is the sound twin of the `comfy-ui-images` skill.
+
+**Scope: sound effects.** Hits, releases, impacts, spells, creature sounds, UI and pickups, short
+actions, ambience and effect loops. Music and instrument parts are out of scope: the graph has
+`Music`/`Instrument` categories, but if the user asks for music, say this skill is tuned for
+sound effects and ask whether to try anyway. Spoken lines are the `chatterbox-text-to-speech`
+skill.
 
 ## Server
 
@@ -49,7 +55,7 @@ graph changes; the ids are a guide.
 |------|-----------|--------------------|
 | User's description | `PrimitiveStringMultiline` (`52:31`) | `value` — plain description, e.g. "The sound of a bowstring letting loose an arrow" |
 | Length in seconds | `PrimitiveFloat` (`52:36`) | `value` — feeds `EmptyLatentAudio.seconds` and the enhancer text |
-| Category | `CustomCombo` (`52:43`) | `choice` = `Music` / `Instrument` / `SFX` / `One-shot` — picks the enhancer's system prompt |
+| Category | `CustomCombo` (`52:43`) | `choice` = `SFX` / `One-shot` (the graph also has `Music` / `Instrument`, out of scope here) — picks the enhancer's system prompt |
 | Prompt enhancer on/off | `PrimitiveBoolean` (`52:35`) → `ComfySwitchNode` (`52:34`) | `true` = an LLM expands the description; `false` = the description goes to the encoder as-is |
 | Prompt enhancer | `TextGenerate` (`52:28`), CLIP `qwen3.5_2b_bf16.safetensors` | `sampling_mode.seed`, `sampling_mode.temperature`, `max_length` |
 | Positive encode | `CLIPTextEncode` (`52:6`) | text comes from the switch |
@@ -72,28 +78,45 @@ text comes back:
 After the run, read it from `outputs["900"].text[0]` and record it in the per-sound `.md`. Use
 an id that isn't already in the graph. Don't add this node to the saved UI workflow.
 
+## Where the output goes
+
+The project decides, not this skill. Before the first save or render of a session, find the
+**output folder** (`<out>` below):
+
+1. Look in the project's root `AGENTS.md` for a "Project paths" row named like
+   **"ComfyUI sound effects output"** and use that path.
+2. If there is no such row, **ask the user** where sound takes should go. Suggest
+   `tools/comfy-ui/output/sound-effects/` when the project has a `tools/` folder (the
+   `godot-ai-architecture` layout); otherwise suggest a folder they name. Then add the row to the
+   "Project paths" table (create the table if the `AGENTS.md` has none), so the question is never
+   asked again. Make sure the folder is git-ignored if it is inside a git repo (ask first).
+3. Never write takes to the project root or anywhere else without a row.
+
+Create `<out>` if it doesn't exist.
+
 ## Files & naming
 
-Sounds live under `test-shot/sound/` at the project root (create it if missing), next to the
-image assets in `test-shot/`. **Each sound gets its own subfolder** holding all its files:
+**Each sound gets its own subfolder** inside `<out>`, holding all its files:
 
 ```
-test-shot/
-  sound/
-    <xxx>-sound-<description>/          ← one folder per sound
-      <xxx>-sound-<description>.json
-      <xxx>-sound-<description>.md
-      <xxx>-sound-<nr>-<description>.mp3
-      <xxx>-sound-<nr>-<description>.md
-    <yyy>-sound-<description>/          ← the next sound, its own folder
-      …
+<out>/
+  <xxx>-sound-<description>/          ← one folder per sound
+    <xxx>-sound-<description>.json
+    <xxx>-sound-<description>.md
+    <xxx>-sound-<nr>-<description>.mp3
+    <xxx>-sound-<nr>-<description>.md
+  <yyy>-sound-<description>/          ← the next sound, its own folder
+    …
 ```
 
-Example: `test-shot/sound/001-sound-bow-string/001-sound-1-bow-string.mp3`.
+Example: `<out>/001-sound-bow-string/001-sound-1-bow-string.mp3`.
 
-`test-shot/sound/` is the workshop. Moving a chosen take into the Godot project (target folder,
-in-game name, WAV conversion, `AudioStreamRandomizer`) is described in
-`prototype/audio_files.md`, under "Bringing a generated sound into the game".
+Takes stay in `<out>` (never edited or renamed). When the user picks one for the game, the
+project's own docs say where its master goes and how it reaches the game (in a Godot AI repo:
+copy the take with its per-sound `.md` and the workflow `.json` to `assets/audio/sfx/...`, then
+the asset map, per the `godot-ai-architecture` skill; the project's prototype audio doc has the
+in-game names and folders). Keep the `Audio: <file>` line in the copied `.md`: it names the take
+it came from.
 
 - **`xxx`** — sound number, zero-padded: `001`, `002`, … Increments on **"generate new sound"**.
 - **`nr`** — version within a sound: `1`, `2`, … Increments each **"generate sound"** so earlier
@@ -112,7 +135,7 @@ or `.opus` if the user switches the save node).
 
 ### Determining numbers
 
-Scan the subfolders of `test-shot/sound/`. Folder names match `^(\d{3})-sound-(.+)$`; per-sound
+Scan the subfolders of `<out>`. Folder names match `^(\d{3})-sound-(.+)$`; per-sound
 files within match `^(\d{3})-sound-(\d+)-(.+)\.(mp3|flac|wav|opus|md)$`.
 - **Current sound** = the highest `xxx` folder present.
 - **Next version** for a sound = (max `nr` among its audio / per-sound `.md` files) + 1.
@@ -126,7 +149,7 @@ Capture the current ComfyUI audio setup without rendering.
 2. Decide the sound: continue the current one, or a new one if it's a fresh concept. Ask for a
    short description if it isn't obvious.
 3. Write `<xxx>-sound-<description>.json` (UI workflow) and `<xxx>-sound-<description>.md` into
-   `test-shot/sound/<xxx>-sound-<description>/` (create it if new).
+   `<out>/<xxx>-sound-<description>/` (create it if new).
 
 ### "generate sound"  → render into the **current** sound
 1. Read latest history → API graph + UI workflow.
@@ -141,7 +164,7 @@ Capture the current ComfyUI audio setup without rendering.
 4. Add the `PreviewAny` node (see "Capturing the enhanced prompt").
 5. `POST /prompt`, poll `GET /history/{prompt_id}` until complete.
 6. Download the audio from the save node's output via `/view` and save it as
-   `test-shot/sound/<xxx>-sound-<description>/<xxx>-sound-<nr>-<description>.mp3` (next `nr`).
+   `<out>/<xxx>-sound-<description>/<xxx>-sound-<nr>-<description>.mp3` (next `nr`).
 7. **Update in place** the sound's `.json` (current UI workflow).
 8. **Write** a new per-sound `<xxx>-sound-<nr>-<description>.md` (template below). It is a
    frozen record and is never edited again.
@@ -154,7 +177,7 @@ recorded seed.
 
 ### "generate new sound"  → start a **new** sound
 Same as "generate sound" but: `xxx` = max + 1, `nr` = 1, create a fresh
-`test-shot/sound/<xxx>-sound-<description>/` folder, and write a fresh sound-level `.json` +
+`<out>/<xxx>-sound-<description>/` folder, and write a fresh sound-level `.json` +
 `.md` plus the first per-sound `<xxx>-sound-1-<description>.md`. Derive a 2–3 word slug from the
 description and tell the user (they can rename).
 
@@ -173,10 +196,9 @@ Do this as the final step of every render.
 
 ## Writing the description
 
-- **Pick the category first.** `SFX` for actions and impacts (bow release, sword hit, door),
-  `One-shot` for a single short hit or note (UI click, coin pickup, drum hit), `Instrument` for
-  a solo instrument part or loop, `Music` for a full track. The category changes how the
-  enhancer expands the description.
+- **Pick the category first.** `SFX` for actions, impacts, creatures and ambience (bow release,
+  sword hit, door, roar, wind), `One-shot` for a single short hit or blip (UI click, coin
+  pickup, chime). The category changes how the enhancer expands the description.
 - **Keep the description short and concrete** when the enhancer is on: what makes the sound,
   what it hits or moves through, and the space ("in a small stone room", "outdoors, dry").
   The enhancer adds the detail.
@@ -196,9 +218,6 @@ one from how long the sound really lasts in the game, including its natural tail
 | Voices and creatures | grunt, death cry, monster roar, skeleton rattle | SFX | 1–3 s |
 | Short actions | reload, footsteps run, chest opening, building placed, gate opening | SFX | 2–4 s |
 | Ambience and loops | wind, rain, campfire, battlefield, crowd | SFX | 10–30 s |
-| Stingers and jingles | victory fanfare, defeat, wave start | Music | 3–8 s |
-| Instrument parts | drum loop, lute melody | Instrument | 8–20 s |
-| Music tracks | menu theme, battle music | Music | 30–120 s |
 
 Pick the short end for snappy game feedback. Tell the user the length and category you chose
 so they can correct it.
@@ -230,7 +249,7 @@ Notes:
 # <xxx>-<nr> — <Description Title>
 
 Description: <text of the user-input node>
-Category: <SFX / One-shot / Instrument / Music>   Enhancer: <on / off>
+Category: <SFX / One-shot>   Enhancer: <on / off>
 Encoded prompt: <the enhanced text from the PreviewAny node, or the description if the enhancer is off>
 Negative: <negative text, or "none">
 Length: <seconds> s

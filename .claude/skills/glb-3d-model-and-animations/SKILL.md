@@ -21,7 +21,7 @@ This skill is generic. Everything specific to this project lives in **`prototype
 2. **Models and animations are separate.** Import animation files as an `AnimationLibrary` and share one library across every character on the same rig.
 3. **Game code talks to an interface, not to a model.** Units call a small visual interface (e.g. "moving", "attack", "hit", "fall"); only the visual scene knows clip names, bones and props. Swapping a placeholder for a model then needs no game-logic changes.
 4. **Configure in import settings, not in code.** Loop modes, import type and texture handling belong in the `.import` file (via the Import dock), so every user of the asset gets them.
-5. **Only import what is used.** Raw zips and unused formats stay outside the Godot project, in the repo's git-ignored `downloads/` folder; only the files in use are copied to `assets/` and exported (see the `godot-development` skill).
+5. **Only import what is used.** Raw zips and unused formats stay outside the Godot project, in the repo's git-ignored `downloads/` folder; only the files in use are copied to `assets/` and exported (see the `godot-ai-architecture` skill).
 
 ## 1. Inspect a pack before importing
 

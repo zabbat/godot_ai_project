@@ -1,15 +1,16 @@
 """Check that the Godot project and the AI side of the repo agree.
 
-Generic script from the `godot-development` skill (assets/check_sync.py).
-Projects keep a copy in tools/ next to export_assets.py; improve the skill's
-version, then copy it. Reads the same `prototype/asset_map/settings.toml`.
+Generic script from the `godot-ai-architecture` skill (assets/check_sync.py).
+Projects keep a copy in tools/godot-sync/ next to export_assets.py; improve the
+skill's version, then copy it. Reads the same `prototype/asset_map/settings.toml`.
 
 Reports only problems, as short lines, so an agent can act on them cheaply:
 
   export     targets that differ from what the asset map would produce; a
              target newer than its master is flagged as edited in Godot
-  workshop   newer takes in the workshop than the one a master was chosen from
-             (the master's .md names its take: "Image: <file>" / "Audio: <file>").
+  outputs    newer takes in the tools' output folders (`outputs` in settings.toml)
+             than the one a master was chosen from (the master's .md names its
+             take: "Image: <file>" / "Audio: <file>").
              List takes reviewed and not wanted in the .md ("Rejected: <file>, ...")
              to stop reporting them.
   unmapped   media files in Godot that no asset map entry produces
@@ -20,7 +21,7 @@ Reports only problems, as short lines, so an agent can act on them cheaply:
   changed    Godot data and code changed after the game data / structure doc
              (by git commit time, plus uncommitted changes)
 
-Usage: python tools/check_sync.py [--repo PATH] [section ...]
+Usage: python tools/godot-sync/check_sync.py [--repo PATH] [section ...]
 Exit code 1 when something is reported.
 """
 
@@ -40,7 +41,7 @@ MEDIA = {".png", ".jpg", ".jpeg", ".webp", ".svg", ".wav", ".ogg", ".mp3", ".ttf
 DATA_AND_CODE = {".tres", ".tscn", ".gd", ".gdshader", ".godot"}
 SKIP_DIRS = {".godot", ".git", ".import", "android", "__pycache__"}
 LINK = re.compile(r"\]\(([^)#\s]+)(?:#[^)]*)?\)")
-SECTIONS = ["export", "workshop", "unmapped", "unused", "structure", "index", "changed"]
+SECTIONS = ["export", "outputs", "unmapped", "unused", "structure", "index", "changed"]
 TAKE_LINE = re.compile(r"^(?:Image|Audio): (\S+)", re.MULTILINE)
 
 
@@ -110,15 +111,27 @@ def check_export(ctx) -> list[str]:
 	return lines
 
 
-def check_workshop(ctx) -> list[str]:
-	workshop_setting = ctx.settings.get("workshop")
-	if not workshop_setting or not (ctx.repo / workshop_setting).is_dir():
-		return []
-	workshop = ctx.repo / workshop_setting
+def output_folders(settings: dict) -> list[str]:
+	"""The tools' output folders from settings.toml (`outputs`; the older `workshop` key still works)."""
+	folders = settings.get("outputs", [])
+	if isinstance(folders, str):
+		folders = [folders]
+	if settings.get("workshop"):
+		folders = [*folders, settings["workshop"]]
+	return folders
+
+
+def check_outputs(ctx) -> list[str]:
 	takes = {}
-	for path in workshop.rglob("*"):
-		if path.is_file():
-			takes.setdefault(path.name, path)
+	for folder in output_folders(ctx.settings):
+		root = ctx.repo / folder
+		if not root.is_dir():
+			continue
+		for path in root.rglob("*"):
+			if path.is_file():
+				takes.setdefault(path.name, path)
+	if not takes:
+		return []
 	lines = []
 	for record in sorted(ctx.assets.rglob("*.md")):
 		text = record.read_text(encoding="utf-8")
@@ -131,7 +144,7 @@ def check_workshop(ctx) -> list[str]:
 					and p.name not in text)
 			if newer:
 				lines.append(f"{record.relative_to(ctx.assets).as_posix()}  (chosen take {take_name}; "
-						f"newer in the workshop: {', '.join(newer)})")
+						f"newer in {take.parent.relative_to(ctx.repo).as_posix()}: {', '.join(newer)})")
 	return lines
 
 

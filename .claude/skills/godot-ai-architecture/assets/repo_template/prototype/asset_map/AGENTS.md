@@ -4,8 +4,8 @@ Which file in the repo's `assets/` becomes which file in the Godot project,
 and how it is converted on the way. `assets/` only describes the resources
 themselves; how the game uses them is recorded here.
 
-`tools/export_assets.py` reads these files and does the export (see
-[tools/AGENTS.md](../../tools/AGENTS.md)). Rebuilding the Godot project's
+`tools/godot-sync/export_assets.py` reads these files and does the export (see
+[tools/godot-sync/AGENTS.md](../../tools/godot-sync/AGENTS.md)). Rebuilding the Godot project's
 resources is one run of it.
 
 ## Where each piece of information lives
@@ -24,7 +24,7 @@ area needs files of its own beyond its entries.
 
 | File | Covers |
 |---|---|
-| [settings.toml](settings.toml) | Paths of `assets/` and the Godot project, for the export script. |
+| [settings.toml](settings.toml) | Paths of `assets/`, the Godot project and the tools' output folders, for the scripts. |
 | [profiles.toml](profiles.toml) | Conversion recipes (`copy`, `portrait`, `sfx`, `loop`, `music`), referenced by name from the entries. Fill each `spec` doc and adjust sizes. |
 
 Add a new `<area>.toml` (for example `portraits.toml`, `models.toml`,

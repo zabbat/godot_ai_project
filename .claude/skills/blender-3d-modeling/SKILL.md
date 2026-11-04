@@ -1,6 +1,6 @@
 ---
 name: blender-3d-modeling
-description: Use Blender through the official Blender Lab MCP server to create and edit 3D models, materials, rigs and animations (game clips, loops, baking IK), render previews, check assets and export GLB for Godot with a bundled check-and-export script (collision/navmesh name suffixes, budgets), following Blender 5.x API rules and good modelling practice - safely, with Blender running in a Docker sandbox or a virtual machine instead of on the user's real machine. Sets a project up for Blender ("set up my project to use blender"): a project-level MCP server, a blender/ folder with models/ (shared with the sandbox) and config/ (sandbox settings), and asks which folders Blender may read and write. Also covers checking prerequisites (tells the user what is missing, like Docker or uv), building the Docker image once per machine, connecting Blender in a VM, and changing shared folders. Use when the user wants to model, sculpt, edit, rig, animate, texture, render or export something in Blender, asks Claude to "do it in Blender", or wants to set up or change the Blender MCP, its sandbox, VM or shared folders.
+description: Use Blender through the official Blender Lab MCP server to create and edit 3D models, materials, rigs and animations (game clips, loops, baking IK), render previews, check assets and export GLB for Godot with a bundled check-and-export script (collision/navmesh name suffixes, budgets), following Blender 5.x API rules and good modelling practice - safely, with Blender running in a Docker sandbox or a virtual machine instead of on the user's real machine. Sets a project up for Blender ("set up my project to use blender"): a project-level MCP server, a Blender folder (from the project's AGENTS.md project paths, e.g. tools/blender/) with models/ (shared with the sandbox) and config/ (sandbox settings), and asks which folders Blender may read and write. Also covers checking prerequisites (tells the user what is missing, like Docker or uv), building the Docker image once per machine, connecting Blender in a VM, and changing shared folders. Use when the user wants to model, sculpt, edit, rig, animate, texture, render or export something in Blender, asks Claude to "do it in Blender", or wants to set up or change the Blender MCP, its sandbox, VM or shared folders.
 ---
 
 # Blender 3D modeling with AI
@@ -9,7 +9,7 @@ Claude drives Blender by sending Python (`bpy`) code to it through the **Blender
 
 Bundled with this skill:
 - `assets/docker/Dockerfile` — the sandbox image (headless Blender + MCP server), built once per machine.
-- `assets/docker/run_sandbox.py` — the launcher each project's `.mcp.json` runs: reads the project's `blender/config/sandbox.toml`, refuses unsafe shares, starts the container with only those folders mounted.
+- `assets/docker/run_sandbox.py` — the launcher each project's `.mcp.json` runs: reads the project's `<bl>/config/sandbox.toml` (passed as `--config`), refuses unsafe shares, starts the container with only those folders mounted.
 - `assets/project/` — templates copied into a project by the project setup: `sandbox.toml`, `AGENTS.md`, `mcp.json`.
 - `assets/scripts/godot_export.py` — checks a scene, exports GLB with Godot settings, reads the GLB back and reports. Sent as code to the MCP (see `references/godot_export.md`).
 - `references/bpy_recipes.md` — `bpy` snippets: new file, inspect, meshes, modifiers, materials, keyframes, rigs and clips, previews, export/import.
@@ -21,21 +21,27 @@ All code in these files was run on Blender 5.1.2 in the sandbox. Read the file t
 
 ## How a project is laid out
 
+**`<bl>`** below is the project's Blender folder. The project decides where it is, not this skill:
+
+1. Look in the project's root `AGENTS.md` for a "Project paths" row named like **"Blender"** and use that path.
+2. If there is no such row, **ask the user** where it should live. Suggest `tools/blender/` when the project has a `tools/` folder (the `godot-ai-architecture` layout), otherwise a folder they name. Then add the row to the "Project paths" table (create the table if the `AGENTS.md` has none), so the question is never asked again.
+3. Never set Blender up in the project root or anywhere else without a row.
+
 Each project that uses Blender has its own MCP server and its own shared folders:
 
 ```
 <project>/
-  .mcp.json                  "blender" server -> uv run .claude/skills/blender-3d-modeling/assets/docker/run_sandbox.py
-  blender/
+  .mcp.json                  "blender" server -> uv run .claude/skills/blender-3d-modeling/assets/docker/run_sandbox.py --config <bl>/config/sandbox.toml
+  <bl>/
     AGENTS.md                index + this project's Blender conventions and gotchas
     config/                  NEVER shared with the sandbox
       sandbox.toml           which project folders the sandbox sees (path, mount, rw/ro), image, memory
     models/                  default shared folder -> /models (read-write): .blend files, previews
 ```
 
-- **`blender/config/sandbox.toml` is the setting.** The launcher reads it every time Claude Code starts the server; Docker sees exactly the `[[share]]` folders in it and nothing else. Change shares by editing it, then restart Claude Code. No image rebuild.
-- **`blender/AGENTS.md` holds the project notes**: conventions (units, naming, where exports go) and gotchas. Read it before Blender work; write findings back to it, not into this skill.
-- The config folder is never shared, so code running in Blender cannot change what Blender can access. The launcher also refuses the project root, `.git`, `.claude`, `.mcp.json`, `tools`, `godot` and `blender/config` (or any folder containing them), anything outside the project, and container system paths.
+- **`<bl>/config/sandbox.toml` is the setting.** The launcher reads it every time Claude Code starts the server; Docker sees exactly the `[[share]]` folders in it and nothing else. Change shares by editing it, then restart Claude Code. No image rebuild.
+- **`<bl>/AGENTS.md` holds the project notes**: conventions (units, naming, where exports go) and gotchas. Read it before Blender work; write findings back to it, not into this skill.
+- The config folder is never shared, so code running in Blender cannot change what Blender can access. The launcher also refuses the project root, `.git`, `.claude`, `.mcp.json`, `godot`, `<bl>/config`, the other tools next to `<bl>` (and `tools/` itself), or any folder containing them, anything outside the project, and container system paths.
 
 ## 0. Check what is there
 
@@ -48,14 +54,14 @@ docker image inspect blender-mcp-sandbox --format '{{.Id}}'    # sandbox image b
 (Get-Command uv -ErrorAction SilentlyContinue).Source          # uv (runs the launcher; also checks ~\.local\bin\uv.exe)
 (Get-Command git -ErrorAction SilentlyContinue).Source
 Test-Path "$HOME\blender_mcp\mcp"                              # MCP server source cloned?
-Test-Path blender\config\sandbox.toml, .mcp.json               # project set up?
+Test-Path <bl>\config\sandbox.toml, .mcp.json                   # project set up? (<bl> from the root AGENTS.md)
 ```
 
 Also check whether `mcp__blender__*` tools are available in this session (the user can run `/mcp`).
 
 | Finding | What to do |
 |---|---|
-| Tools available, `blender/config/sandbox.toml` exists | Go to **Working in Blender**. |
+| Tools available, `<bl>/config/sandbox.toml` exists | Go to **Working in Blender**. |
 | **Docker not installed** | **Tell the user** — do not install it yourself. Docker Desktop: <https://www.docker.com/products/docker-desktop/> (Windows: needs WSL 2, admin rights, usually a reboot). Offer the VM mode (section 3) if they have a VM, and say why running Blender MCP directly on their machine is not recommended (section 4). |
 | Docker installed, engine not running | Ask the user to start Docker Desktop (or start it: `Start-Process "C:\Program Files\Docker\Docker\Docker Desktop.exe"`, then wait for `docker info`). |
 | **uv not installed** | Tell the user; it runs the launcher with its own Python, so no system Python is needed. Install: <https://docs.astral.sh/uv/getting-started/installation/> (Windows: `powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 \| iex"`). Offer to run it; Claude Code must be restarted afterwards to see the new PATH. |
@@ -85,26 +91,26 @@ Also check whether `mcp__blender__*` tools are available in this session (the us
 ## 2. Project setup ("set up my project to use blender")
 
 1. **Machine ready?** Do step 0 and section 1 first if needed.
-2. **Ask which folders Blender may use** (AskUserQuestion). Default, if the user does not specify: only `blender/models` → `/models`, read-write. Offer the common extras:
+2. **Ask which folders Blender may use** (AskUserQuestion). Default, if the user does not specify: only `<bl>/models` → `/models`, read-write. Offer the common extras:
    - an **export folder** for finished models, read-write (in a Godot AI repo: `assets/3d` → `/export`);
-   - a **references/input folder**, read-only (e.g. `blender/refs` or `docs/references` → `/refs`);
+   - a **references/input folder**, read-only (e.g. `<bl>/refs` or `docs/references` → `/refs`);
    - any other folder the user names (check it against the refused list above; explain if refused).
    Share the smallest folder that does the job.
 3. **Create the files** from `assets/project/`:
-   - `blender/config/sandbox.toml` from the template, with one `[[share]]` per chosen folder;
-   - `blender/AGENTS.md` from the template, filled in with the chosen shares and where exports go;
-   - `blender/models/` (and any other shared folder) — the launcher also creates them;
-   - **`.mcp.json`** in the project root: copy `assets/project/mcp.json`; if a `.mcp.json` exists, add the `blender` entry to its `mcpServers` and keep the rest.
-   - `.gitignore`: add `*.blend1` (Blender's backup on every save) and `blender/models/_previews/`. Ask the user whether `.blend` files should be committed (they can be large; in a Godot AI repo they are workshop material and the chosen `.glb` in `assets/` is the master).
-   - If the root `AGENTS.md` indexes folders, add a line for `blender/`.
+   - `<bl>/config/sandbox.toml` from the template, with one `[[share]]` per chosen folder;
+   - `<bl>/AGENTS.md` from the template, filled in with the chosen shares and where exports go;
+   - `<bl>/models/` (and any other shared folder) — the launcher also creates them;
+   - **`.mcp.json`** in the project root: copy `assets/project/mcp.json` and set its `--config` argument to `<bl>/config/sandbox.toml`; if a `.mcp.json` exists, add the `blender` entry to its `mcpServers` and keep the rest.
+   - `.gitignore`: add `*.blend1` (Blender's backup on every save) and `<bl>/models/_previews/`. Ask the user whether `.blend` files should be committed (they can be large; in a Godot AI repo they are working files and the chosen `.glb` in `assets/` is the master).
+   - Make sure the "Blender" row is in the root `AGENTS.md` "Project paths" table, and add a line for the folder to the index of its parent (`tools/AGENTS.md` in a `tools/` layout).
 4. **Check** — must print the docker command with exactly the chosen `-v` folders:
    ```powershell
-   uv run --quiet .claude/skills/blender-3d-modeling/assets/docker/run_sandbox.py --check
+   uv run --quiet .claude/skills/blender-3d-modeling/assets/docker/run_sandbox.py --config <bl>/config/sandbox.toml --check
    ```
 5. **An older user-level `blender` server** (in `~/.claude.json` → `mcpServers`, e.g. from a manual setup) would serve every project that has no `.mcp.json` with its own folders. A project's `.mcp.json` takes precedence over it, but ask the user whether to remove it (back up `~/.claude.json` first, edit only that entry).
 6. Ask the user to **restart Claude Code and approve the `blender` project server** when prompted, then check `/mcp`. Test with a tiny call (new file from `/opt/empty.blend` saved to `/models/_test.blend`, then delete it).
 
-**Changing shares later:** edit `blender/config/sandbox.toml` (add/remove a `[[share]]`, switch `access`), run the `--check` command, update the table in `blender/AGENTS.md`, restart Claude Code.
+**Changing shares later:** edit `<bl>/config/sandbox.toml` (add/remove a `[[share]]`, switch `access`), run the `--check` command, update the table in `<bl>/AGENTS.md`, restart Claude Code.
 
 ### What works in Docker mode
 
@@ -119,8 +125,8 @@ Only the `*_for_cli` tools (they start `blender --background <file>` inside the 
 
 ### In a Godot AI repo
 
-Follows the `godot-development` skill's flow (workshop → `assets/` → asset map → Godot):
-- `blender/models/` is workshop material: `.blend` files and previews.
+Follows the `godot-ai-architecture` skill's flow (tool folder → `assets/` → asset map → Godot):
+- `<bl>/models/` holds the working files: `.blend` files and previews (`models/_previews/`).
 - The chosen export goes to `assets/3d/<kind>/<subject>/<subject>.glb` (share `assets/3d` → `/export`) with a `.md` next to it naming the source `.blend`.
 - `godot/` is never shared (the launcher refuses it); Godot gets the model through the asset map (`prototype/asset_map/models.toml`), and the `glb-3d-model-and-animations` skill covers importing it.
 
@@ -139,8 +145,8 @@ Use when the user has a VM (VirtualBox, VMware, Hyper-V on Pro, UTM/Parallels on
    - Enable an SSH server (`sudo apt install openssh-server`).
 2. **Network:** a host-only (or NAT with port-forward) adapter so the host reaches SSH; disable internet access afterwards if the user wants Blender code unable to send data out.
 3. **SSH key from the host** (Windows has OpenSSH built in): `ssh-keygen -t ed25519`, append the `.pub` to `~/.ssh/authorized_keys` in the VM, check `ssh -o BatchMode=yes <user>@<vm-ip> echo ok` (must not ask for a password — Claude Code cannot answer prompts).
-4. **Shared folders:** share the project's `blender/models` (and export/reference folders) with the VM — see below. Same rules as Docker: smallest folders, references read-only, never `blender/config`, `.git`, `.claude`, `godot`.
-5. **Project files:** `blender/AGENTS.md` (mode: VM, with a table host path ↔ VM path ↔ access), and in `.mcp.json` (machine-specific: VM address and user — ask whether to commit it or use local scope instead):
+4. **Shared folders:** share the project's `<bl>/models` (and export/reference folders) with the VM — see below. Same rules as Docker: smallest folders, references read-only, never `<bl>/config`, `.git`, `.claude`, `godot`.
+5. **Project files:** `<bl>/AGENTS.md` (mode: VM, with a table host path ↔ VM path ↔ access), and in `.mcp.json` (machine-specific: VM address and user — ask whether to commit it or use local scope instead):
    ```json
    "blender": {
      "type": "stdio",
@@ -149,13 +155,13 @@ Use when the user has a VM (VirtualBox, VMware, Hyper-V on Pro, UTM/Parallels on
               "env BLENDER_PATH=/path/to/blender /home/<user>/blender_mcp/mcp/.venv/bin/blender-mcp"]
    }
    ```
-   `blender/config/sandbox.toml` is not used in VM mode (the VM software holds the shares).
+   `<bl>/config/sandbox.toml` is not used in VM mode (the VM software holds the shares).
 6. Restart Claude Code, approve the server, `/mcp`; test with `get_blendfile_summary_path_info` while Blender is open in the VM.
 
 In VM mode **all tools work**: `execute_blender_code` edits the open file live (the user sees it), screenshots let Claude check results, `*_for_cli` tools run a background Blender inside the VM. Remind the user to save in their VM Blender before Claude runs `_for_cli` tools on the same file.
 
 **Sharing a folder with a VM:**
-- **VirtualBox:** `VBoxManage sharedfolder add "<vm>" --name models --hostpath "<project>\blender\models" --automount` (add `--readonly` for inputs; VM powered off, or `--transient` while running). Needs Guest Additions; Linux guests mount it at `/media/sf_models` and the user must be in `vboxsf` (`sudo usermod -aG vboxsf $USER`, log out/in).
+- **VirtualBox:** `VBoxManage sharedfolder add "<vm>" --name models --hostpath "<project>\<bl>\models" --automount` (add `--readonly` for inputs; VM powered off, or `--transient` while running). Needs Guest Additions; Linux guests mount it at `/media/sf_models` and the user must be in `vboxsf` (`sudo usermod -aG vboxsf $USER`, log out/in).
 - **VMware Workstation/Player:** VM Settings → Options → Shared Folders → add; tick read-only for inputs. Linux guest: `/mnt/hgfs/<name>` (if missing: `sudo vmhgfs-fuse .host:/ /mnt/hgfs -o allow_other`).
 - **Hyper-V / anything else:** share the host folder over SMB (folder Properties → Sharing, a dedicated user) and mount it in the guest (`sudo mount -t cifs //<host-ip>/models /mnt/models -o username=<user>,uid=$(id -u)`).
 - **UTM / Parallels (macOS):** the VM's Sharing settings; UTM Linux guests mount VirtFS with `sudo mount -t 9p -o trans=virtio share /mnt/models`.
@@ -169,9 +175,9 @@ Installing the add-on in the user's own Blender and running the server on the ho
 A shared folder is not a copy: the sandbox reads and writes the **same files** on the host disk. A save in Blender overwrites the host file immediately; a change on the host is visible to the sandbox immediately. So:
 - Read-write shares can be changed or deleted by Blender code — that is why only dedicated folders are shared, and inputs are read-only.
 - Blender keeps the previous version as `<name>.blend1` on each save. For bigger changes, work on a copy (`<name>_v2.blend`) or rely on git.
-- A file outside the shared folders is invisible to the sandbox. To work on one, copy it into `blender/models/` (the original stays untouched) or add its folder as a share.
+- A file outside the shared folders is invisible to the sandbox. To work on one, copy it into `<bl>/models/` (the original stays untouched) or add its folder as a share.
 
-**Path translation:** Blender only knows sandbox paths. Look the mapping up in `sandbox.toml` (Docker) or `blender/AGENTS.md` (VM): the user says `blender/models/ship/ship.blend`, the tool needs `/models/ship/ship.blend`. Report saved files back with their **project** path.
+**Path translation:** Blender only knows sandbox paths. Look the mapping up in `sandbox.toml` (Docker) or `<bl>/AGENTS.md` (VM): the user says `<bl>/models/ship/ship.blend`, the tool needs `/models/ship/ship.blend`. Report saved files back with their **project** path.
 
 ## Working in Blender
 

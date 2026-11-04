@@ -1,11 +1,12 @@
-# Paths and options used by tools/export_assets.py and tools/check_sync.py,
+# Paths and options used by tools/godot-sync/export_assets.py and check_sync.py,
 # relative to the repo root. Copy to prototype/asset_map/settings.toml.
 
 assets = "assets"
 godot_project = "godot/<project>"
 
-# Generation workshop (every take); check_sync.py looks for takes newer than a master's.
-workshop = "<workshop folder>"
+# The tools' output folders (every generated take); check_sync.py looks in them for
+# takes newer than the one a master was chosen from. Missing folders are skipped.
+outputs = ["tools/comfy-ui/output", "tools/chatterbox/output"]
 
 # Docs check_sync.py compares with the Godot project.
 godot_structure = "prototype/godot_structure.md"
@@ -15,4 +16,4 @@ game_data = "prototype/game_data.md"
 not_exported = ["icon.svg"]
 
 # Files in assets/ that are records, not resources, so they need no map entry.
-asset_records = ["*.md", "*.json", "License.txt"]
+asset_records = ["*.md", "*.json", "License.txt", ".gitkeep"]

@@ -31,8 +31,10 @@ Add a folder when its first resource arrives, and describe it here.
 ## Rules
 
 - **Only chosen resources.** Work in progress (every generated take, test
-  renders) stays in the workshop, `{{WORKSHOP}}/` at the repo root
-  (git-ignored). Copy a take here once it is picked for the game.
+  renders) stays in the tool's `output/` folder under `tools/` (git-ignored;
+  paths in the root `AGENTS.md`). Copy a take here once it is picked for the
+  game.
+- **No code.** Scripts belong to a tool in `tools/`, never here.
 - **No raw downloads.** Zips and files as downloaded stay in `downloads/`
   (git-ignored); only the files the game uses are copied here. Material that
   only shows what we want (a drawing style) goes to
@@ -41,15 +43,15 @@ Add a folder when its first resource arrives, and describe it here.
   (largest image, lossless or original audio); the asset map's profile makes
   the game-ready version.
 - **Provenance next to the file.** A generated resource keeps the per-take
-  `.md` from the workshop (prompt, model, seed) renamed to match it, and the
+  `.md` from the tool's output (prompt, model, seed) renamed to match it, and the
   reloadable ComfyUI workflow as `<name>_workflow.json`. A vendor resource
   keeps its pack's `License.txt`, and the pack is listed in
   `3d/third_party/sources.md`. Never edit the resource itself; changes are
   new takes.
 - **New takes replace the master in place**: same file names, with the new
   take's `.md`. Takes reviewed and not wanted are listed in the master's
-  `.md` as `Rejected: <take file>, ...`; `tools/check_sync.py` reports any
-  newer, unlisted take in the workshop.
+  `.md` as `Rejected: <take file>, ...`; `tools/godot-sync/check_sync.py`
+  reports any newer, unlisted take in the tools' output folders.
 - **No game usage here.** No Godot paths, `.import` files or game data in
   this folder; those belong in `prototype/` and `godot/`.
 - Resources by hand (bought, made in an editor) follow the same rules: the

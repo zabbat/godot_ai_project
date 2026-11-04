@@ -1,7 +1,11 @@
-{{WORKSHOP}}/
+# Generated takes of every tool (chosen ones are copied to assets/)
+tools/*/output/
 
 # Raw downloads (vendor zips, original files); pages and licenses are recorded in assets/ and docs/references/
 downloads/
+
+# Built game exports (APK, idsig), written by Godot through export_presets.cfg
+export/
 
 # Python caches
 __pycache__/

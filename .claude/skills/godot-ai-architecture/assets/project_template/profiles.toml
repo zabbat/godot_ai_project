@@ -1,6 +1,6 @@
 # Conversion recipes used by the asset map entries. Copy to
 # prototype/asset_map/profiles.toml and adjust sizes to the game.
-# `kind` is how tools/export_assets.py converts: copy, image (Pillow) or
+# `kind` is how tools/godot-sync/export_assets.py converts: copy, image (Pillow) or
 # ffmpeg (`args` go between the input and the output file).
 # `import` sets Godot import settings ([params] keys of the target's .import).
 # Why a profile has its values is written in the doc named in `spec`.

@@ -1,21 +1,21 @@
 """Export source assets into the Godot project, following the asset map.
 
-Generic script from the `godot-development` skill (assets/export_assets.py).
-Projects keep a copy in tools/; improve the skill's version, then copy it.
+Generic script from the `godot-ai-architecture` skill (assets/export_assets.py).
+Projects keep a copy in tools/godot-sync/; improve the skill's version, then copy it.
 
 Reads every `<area>.toml` in the asset map folder, converts each entry's
 `source` (under the assets folder) with its profile from `profiles.toml`, and
 writes the result to `target` (under the Godot project). Paths come from
-`settings.toml` in the asset map folder. See the `godot-development` skill.
+`settings.toml` in the asset map folder. See the `godot-ai-architecture` skill.
 
 The repo root is the nearest folder, from the working directory up, that has
 `prototype/asset_map/settings.toml` (or pass --repo).
 
 Usage (Python 3.11+ with Pillow; ffmpeg on PATH for audio profiles):
-    python tools/export_assets.py              # export everything that changed
-    python tools/export_assets.py --dry-run    # only report what would change
-    python tools/export_assets.py portraits    # only these areas (toml names)
-    python tools/export_assets.py --force      # rewrite every target
+    python tools/godot-sync/export_assets.py              # export everything that changed
+    python tools/godot-sync/export_assets.py --dry-run    # only report what would change
+    python tools/godot-sync/export_assets.py portraits    # only these areas (toml names)
+    python tools/godot-sync/export_assets.py --force      # rewrite every target
 
 Profile kinds:
     copy    copy the file or folder tree unchanged

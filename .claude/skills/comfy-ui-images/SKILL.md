@@ -1,9 +1,9 @@
 ---
-name: comfy-ui-asset-generation
+name: comfy-ui-images
 description: Drive a local ComfyUI server — save the current workflow + prompt to local files, generate images on request, and cut a character out of an image (transparent background). Use when the user says "save" (a ComfyUI setup), "generate image", "generate new image", "cut out", "remove the background" or "make it transparent", or otherwise asks to capture/run ComfyUI prompts, LoRAs, or settings.
 ---
 
-# ComfyUI support
+# ComfyUI images
 
 Helps run and archive image generation for the current project. ComfyUI runs locally and
 holds the creative settings (model, LoRAs, sampler, seed, prompt) as a node graph
@@ -41,14 +41,29 @@ The server cannot see the *unsaved* browser canvas. So the rule the user follows
 Whenever a command needs "the current setup," read it from `GET /history?max_items=1`.
 If history is empty, ask the user to Queue Prompt once in ComfyUI first.
 
+## Where the output goes
+
+The project decides, not this skill. Before the first save or render of a session, find the
+**output folder** (`<out>` below):
+
+1. Look in the project's root `AGENTS.md` for a "Project paths" row named like
+   **"ComfyUI images output"** and use that path.
+2. If there is no such row, **ask the user** where image takes should go. Suggest
+   `tools/comfy-ui/output/images/` when the project has a `tools/` folder (the
+   `godot-ai-architecture` layout); otherwise suggest a folder they name. Then add the row to the
+   "Project paths" table (create the table if the `AGENTS.md` has none), so the question is never
+   asked again. Make sure the folder is git-ignored if it is inside a git repo (ask first).
+3. Never write takes to the project root or anywhere else without a row.
+
+Create `<out>` if it doesn't exist.
+
 ## Files & naming
 
-Everything lives under a `test-shot/` directory at the root of the current project (create it
-if it doesn't exist). **Each asset gets its own subfolder** inside `test-shot/`, and that
-subfolder holds all of the asset's files — the images, the `.json`, and the `.md`:
+**Each asset gets its own subfolder** inside `<out>`, and that subfolder holds all of the
+asset's files — the images, the `.json`, and the `.md`:
 
 ```
-test-shot/
+<out>/
   <xxx>-asset-<description>/          ← one folder per asset
     <xxx>-asset-<description>.json
     <xxx>-asset-<description>.md
@@ -81,12 +96,12 @@ folder**:
 
 ### Determining numbers
 
-Scan the asset subfolders under `test-shot/`. Folder names match
+Scan the asset subfolders under `<out>`. Folder names match
 `^(\d{3})-asset-(.+)$`; per-image files within match
 `^(\d{3})-asset-(\d+)-(.+)\.(png|md)$`.
 - **Current asset** = the highest `xxx` folder present (the one most recently worked on).
 - **Next version** for an asset = (max `nr` seen among that asset's `.png`/per-image `.md` files) + 1.
-- **New asset** = (max `xxx`) + 1 → create a new `test-shot/<xxx>-asset-<description>/` folder,
+- **New asset** = (max `xxx`) + 1 → create a new `<out>/<xxx>-asset-<description>/` folder,
   `nr` resets to 1.
 
 ## Commands
@@ -98,7 +113,7 @@ Capture the current ComfyUI setup without rendering.
    fresh concept, treat as a new asset (see "generate new image" numbering). Ask the user for
    a short description if it isn't obvious.
 3. Write `<xxx>-asset-<description>.json` (the UI workflow) and `<xxx>-asset-<description>.md`
-   into the asset's folder `test-shot/<xxx>-asset-<description>/` (create it if new).
+   into the asset's folder `<out>/<xxx>-asset-<description>/` (create it if new).
 
 ### "generate image"  → render into the **current** asset
 1. Read latest history → API graph + UI workflow.
@@ -107,7 +122,7 @@ Capture the current ComfyUI setup without rendering.
    says to keep the seed.
 3. `POST /prompt`, poll `GET /history/{prompt_id}` until complete.
 4. Download the output via `/view` and save into the asset's folder as
-   `test-shot/<xxx>-asset-<description>/<xxx>-asset-<nr>-<description>.png` (next `nr`).
+   `<out>/<xxx>-asset-<description>/<xxx>-asset-<nr>-<description>.png` (next `nr`).
 5. **Update in place** the asset's `.json` (current UI workflow) — reloadable canvas state.
 6. **Write** (don't overwrite anything) a new per-image
    `<xxx>-asset-<nr>-<description>.md` with that `nr`'s exact prompt/settings — see template
@@ -120,7 +135,7 @@ assuming the latest generation's settings still apply.
 
 ### "generate new image"  → start a **new** asset
 Same as "generate image" but: `xxx` = max + 1, `nr` = 1, create a fresh
-`test-shot/<xxx>-asset-<description>/` folder, and write a fresh asset-level `.json` + `.md`
+`<out>/<xxx>-asset-<description>/` folder, and write a fresh asset-level `.json` + `.md`
 (the `Asset:`/`Notes:` file) plus the first per-image `<xxx>-asset-1-<description>.md`.
 Derive a 2–3 word `description` slug from the prompt/asset and tell the user (they can rename).
 End by **displaying the image** (see below).
@@ -233,6 +248,13 @@ Model: <unet/checkpoint>   VAE: <vae>
 Sampler: <sampler> / <scheduler>   Steps: <n>   CFG: <n>   Seed: <n>
 Image: <xxx>-asset-<nr>-<description>.png
 ```
+
+## Bringing a take into the game
+
+Takes stay in `<out>` (they are never edited or renamed). When the user picks one for the game,
+the project's own rules say where its master goes (in a Godot AI repo: copy the `.png` with its
+per-image `.md` and the workflow `.json` to `assets/`, per the `godot-ai-architecture` skill).
+Keep the `Image: <file>` line in the copied `.md`: it names the take it came from.
 
 ## Constraints
 - Can't operate the ComfyUI canvas like a mouse user, and can only use models/LoRAs already

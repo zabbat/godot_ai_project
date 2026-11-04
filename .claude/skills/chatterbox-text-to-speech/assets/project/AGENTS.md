@@ -1,10 +1,10 @@
-# chatterbox/ — local text-to-speech for game voices
+# Chatterbox — local text-to-speech for game voices
 
 Index and project notes for generating speech with Chatterbox. How-to is in the skill
 `.claude/skills/chatterbox-text-to-speech/` — read it before generating.
 
 ```
-chatterbox/
+<cbx>/
   AGENTS.md          this file: index + this game's voice notes
   .gitignore         ignores voices/, output/, settings/.venv
   settings/          the locked toolchain and the knobs
@@ -14,17 +14,17 @@ chatterbox/
     config.toml      defaults: model, device, format, trimming
     styles.toml      emotion / delivery presets (--style NAME)
   voices/            reference clips, one per character voice (git-ignored)
-  output/            generated lines, one folder per line name (git-ignored workshop)
+  output/            generated lines, one folder per line name (git-ignored)
 ```
 
 Run (from the project root):
 
 ```
-uv run --project chatterbox/settings .claude/skills/chatterbox-text-to-speech/assets/scripts/speak.py --style angry --voice NAME --name LINE-NAME "text"
+uv run --project <cbx>/settings .claude/skills/chatterbox-text-to-speech/assets/scripts/speak.py --style angry --voice NAME --name LINE-NAME "text"
 ```
 
 Chosen takes leave `output/`: copy them into `assets/` (source sounds) and let the asset map
-carry them into Godot. `output/` is a workshop and may be deleted at any time.
+carry them into Godot. `output/` holds generated takes and may be deleted at any time.
 
 ## Voices (fill in as clips are added)
 

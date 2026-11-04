@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """Generate speech lines with Chatterbox for a game project.
 
-Run it through the locked environment, from the project root:
+Run it through the locked environment, from the project root. <cbx> is the project's
+Chatterbox folder (its "Chatterbox" row in the root AGENTS.md, e.g. tools/chatterbox):
 
-    uv run --project chatterbox/settings .claude/skills/chatterbox-text-to-speech/assets/scripts/speak.py \
+    uv run --project <cbx>/settings .claude/skills/chatterbox-text-to-speech/assets/scripts/speak.py \
         --style angry --voice orc_captain --name orc-taunt "You dare enter my hall?"
 
-    uv run --project chatterbox/settings .../speak.py --batch chatterbox/lines.json
-    uv run --project chatterbox/settings .../speak.py --list        # voices, styles, models
+    uv run --project <cbx>/settings .../speak.py --batch <cbx>/lines.json
+    uv run --project <cbx>/settings .../speak.py --list        # voices, styles, models
 
-Each take is written as  chatterbox/output/<name>/<name>-<nr>.<fmt>  plus a  <name>-<nr>.json
+Each take is written as  <cbx>/output/<name>/<name>-<nr>.<fmt>  plus a  <name>-<nr>.json
 sidecar holding every setting and the seed, so the take can be reproduced or tweaked. A batch
 file is a JSON list of objects using the same keys as the sidecar (text, name, style, voice,
 model, seed, exaggeration, ...); a sidecar can be passed back in as a one-line batch.
@@ -93,12 +94,21 @@ def log(*a):
     print(*a, file=sys.stderr, flush=True)
 
 
-def find_root(start: Path) -> Path:
-    """Project root = the folder that contains chatterbox/settings."""
+def find_cbx(start: Path) -> Path:
+    """The project's Chatterbox folder (<cbx>, the one holding settings/).
+
+    `uv run --project <cbx>/settings` runs this script in <cbx>/settings/.venv, so the
+    folder is found from the running environment. Fallback: look for tools/chatterbox/ or
+    chatterbox/ from the current folder up.
+    """
+    venv = Path(sys.prefix).resolve()
+    if venv.name == ".venv" and (venv.parent / "pyproject.toml").is_file():
+        return venv.parent.parent
     for p in [start, *start.parents]:
-        if (p / "chatterbox" / "settings").is_dir():
-            return p
-    sys.exit("Cannot find chatterbox/settings above the current folder. Run from the project root.")
+        for cand in (p / "tools" / "chatterbox", p / "chatterbox"):
+            if (cand / "settings").is_dir():
+                return cand
+    sys.exit("Cannot find the Chatterbox folder. Run with: uv run --project <cbx>/settings speak.py ...")
 
 
 def load_toml(path: Path) -> dict:
@@ -330,7 +340,7 @@ def main():
     ap.add_argument("--model", choices=("auto",) + MODELS,
                     help="default auto: markers in the text -> turbo; --exaggeration/--cfg-weight -> english; both -> stop and ask")
     ap.add_argument("--style")
-    ap.add_argument("--voice", help="clip name in chatterbox/voices/, or a path")
+    ap.add_argument("--voice", help="clip name in <cbx>/voices/, or a path")
     ap.add_argument("--language", help="multilingual model: ar da de el en es fi fr he hi it ja ko ms nl no pl pt ru sv sw tr zh")
     ap.add_argument("--name", help="output folder / file stem (default: first words of the text)")
     ap.add_argument("--takes", type=int)
@@ -343,11 +353,10 @@ def main():
     ap.add_argument("--repetition-penalty", dest="repetition_penalty", type=float)
     ap.add_argument("--format", choices=("wav", "ogg", "mp3"))
     ap.add_argument("--no-trim", action="store_true")
-    ap.add_argument("--out", help="output root (default chatterbox/output)")
+    ap.add_argument("--out", help="output root (default <cbx>/output)")
     args = ap.parse_args()
 
-    root = find_root(Path.cwd())
-    cbx = root / "chatterbox"
+    cbx = find_cbx(Path.cwd())
     settings = cbx / "settings"
     voices_dir = cbx / "voices"
     styles = load_toml(settings / "styles.toml")

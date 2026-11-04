@@ -7,7 +7,7 @@ model = "auto"       # auto | english | multilingual | turbo | nano  (see SKILL.
 exaggeration = 0.5   # default emotion intensity when a line sets none (and no style preset does)
 cfg_weight = 0.5     # default pace control when a line sets none (lower = slower)
 device = "auto"      # auto | cuda | cpu | mps
-voice = ""           # name of a clip in chatterbox/voices/ (no extension); "" = the model's built-in voice
+voice = ""           # name of a clip in <cbx>/voices/ (no extension); "" = the model's built-in voice
 language = "en"      # only used by the multilingual model
 format = "wav"       # wav | ogg | mp3  (ogg/mp3 need ffmpeg on PATH)
 takes = 1            # takes per line; each gets its own seed

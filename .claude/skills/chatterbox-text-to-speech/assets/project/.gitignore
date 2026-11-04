@@ -2,7 +2,7 @@
 voices/*
 !voices/.gitkeep
 
-# Generated lines are a workshop; promote chosen takes into assets/
+# Generated lines are takes (output/); copy chosen ones into assets/
 output/
 
 # uv environment (uv.lock and pyproject.toml ARE committed)
