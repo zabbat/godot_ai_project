@@ -12,7 +12,8 @@ The repo has five working areas. The Godot project can be rebuilt from the other
   docs/              the game design, for people (+ style/, references/, optional characters/)
   prototype/         the build spec: how it is built in Godot, exact game data, asset map
                      (+ optional characters/: one resource sheet per character)
-  assets/            source resources (images, models, sounds) + provenance; no code
+  assets/            source resources (images, models, sounds, character voice references)
+                     + provenance; no code
   tools/             one folder per tool:
     godot-sync/        export_assets.py, check_sync.py
     comfy-ui/          output/images/, output/sound-effects/  (generated takes, git-ignored)
@@ -36,7 +37,7 @@ In Claude Code, from this repo, ask to start a new Godot project (the `godot-ai-
 3. writes the `AGENTS.md` files, standard docs and a minimal `project.godot` / `main.tscn`,
 4. copies `export_assets.py`, `check_sync.py` into `tools/godot-sync/` and the asset-map starter files.
 
-The destination must be empty or not exist yet. Tools (Chatterbox, Blender) are set up later by their own skills, into `tools/`.
+The destination must be empty or not exist yet. Tools (Chatterbox, Kokoro, Blender) are set up later by their own skills, into `tools/` ("init chatterbox", "init kokoro", ...).
 
 To bring an existing project up to date with the template, ask to migrate it ([references/migrate.md](.claude/skills/godot-ai-architecture/references/migrate.md)).
 
@@ -56,13 +57,27 @@ To bring an existing project up to date with the template, ask to migrate it ([r
 | `generate-voice-lines` | skill | A character's voice and lines: designs the voice with Kokoro (one calm 6-8 s reference clip, master in `assets/audio/voice/<name>/`), generates lines by kind (speech, battle) with Chatterbox from it, 5 takes each, Whisper word check and cutting; `init kokoro` installs Kokoro + Whisper into the project's Kokoro folder |
 | `godot-resource-manager` | agent | Syncs assets into Godot and updates the docs from the Godot project |
 
+## Character voices
+
+Spoken lines are made in two steps, because no single local tool does both (`generate-voice-lines`):
+
+1. **Kokoro designs the voice.** It blends its built-in voices into one calm 6-8 s **reference clip**
+   per character, chosen by the user. The master is kept in `assets/audio/voice/<name>/` with its
+   recipe; Chatterbox uses a git-ignored copy.
+2. **Chatterbox acts the lines.** Every line is cloned from that one clip with the English model; the
+   kind of line (speech: greetings, dialogue; battle: spells, battle cries) only changes the
+   settings. 5 takes per line, a Whisper word check, and the user picks.
+
+One calm reference with the intensity added once, in the settings, gave by far the best results in
+testing. The tests and lessons behind it are in [voice_gen_context.md](voice_gen_context.md).
+
 ## Requirements
 
 - Claude Code
 - Godot 4 (GDScript only)
 - Python 3.11+ with Pillow, and `ffmpeg`, to run the export and sync scripts
 - A local ComfyUI server, only for the ComfyUI generation skills
-- `uv` and `git`, only for `chatterbox-text-to-speech` and `generate-voice-lines` (an NVIDIA GPU is recommended)
+- `uv` and `git`, only for `chatterbox-text-to-speech` and `generate-voice-lines` (an NVIDIA GPU is recommended; Kokoro and the Whisper check also run on CPU). First use downloads the models (Chatterbox several GB, Kokoro ~330 MB, Whisper ~460 MB) into the shared Hugging Face cache
 - Docker and `uv`, only for `blender-3d-modeling`
 
 ## Changing the template
