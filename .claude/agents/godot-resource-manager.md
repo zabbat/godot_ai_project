@@ -46,6 +46,14 @@ Read the other prototype docs (`game_data.md`, `character_resources.md`,
 tools, where each kind of fact lives, asset map and profile format); the
 `godot-development` skill those inside Godot (folder layout, Resources).
 
+**Characters (optional)**: if `prototype/characters/` exists, each character
+has a resource sheet (`prototype/characters/<type>/<name>.md`, format in the
+`game-character` skill). When you export, choose or recover a resource that
+belongs to a character, update its row (status, master, take, Godot file) in
+the same step, and report rows whose status does not match what you found
+(`in game` but not exported, a master that exists while the row says
+`missing`).
+
 ## Workflow
 
 ### 1. Run the checks (cheap)

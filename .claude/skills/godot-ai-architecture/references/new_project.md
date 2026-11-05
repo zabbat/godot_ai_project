@@ -15,6 +15,7 @@ Ask the user (one question block, with defaults) for what you cannot infer:
 | Renderer: `mobile`, `forward_plus` or `gl_compatibility` | `{{RENDERER_ID}}` / `{{RENDERER_NAME}}` (`Mobile` / `Forward Plus` / `GL Compatibility`) | `mobile` |
 | Window: viewport width x height, orientation (portrait = 1, landscape = 0) | `{{VIEWPORT_W}}`, `{{VIEWPORT_H}}`, `{{ORIENTATION}}` | 1280 x 720 landscape (0) |
 | Godot version and executable path | `{{ENGINE_VERSION}}`, `{{GODOT_EXE}}` | `4.x` and `(not set yet)` |
+| Does the game have characters (heroes, enemies, a player character, NPCs)? | (none: a yes runs the `game-character` skill's "Set up characters" after step 5) | ask; "not yet" is fine (it can be set up later) |
 
 Stop if `DEST` exists and is not empty: never overwrite a project. Say so and ask for another folder.
 
@@ -85,7 +86,7 @@ Finally check that nothing is left: `grep -rn '{{\|<project>' . --exclude-dir=.c
 
 - If `git` is available and the user wants it: `git init` in `DEST` (do not commit unless asked).
 - Do **not** run `export_assets.py` or `check_sync.py`: there is nothing to export yet. Both need Python 3.11+ (Pillow for images, `ffmpeg` for audio); `python` may not be on the PATH, in which case say so and note it in `tools/godot-sync/AGENTS.md`.
-- Report to the user: where the project is, the choices made (defaults taken), and the next steps: write the game idea in `docs/game_design/`, fill `docs/style/`, open `godot/<GODOT_PROJECT>/project.godot` in Godot once (it generates `.godot/` and `.uid` files), set the Godot executable in `prototype/godot_structure.md` if it was left blank, and set up tools when needed ("init chatterbox", "set up my project to use blender"; ComfyUI needs no setup).
+- Report to the user: where the project is, the choices made (defaults taken), and the next steps: write the game idea in `docs/game_design/`, fill `docs/style/`, open `godot/<GODOT_PROJECT>/project.godot` in Godot once (it generates `.godot/` and `.uid` files), set the Godot executable in `prototype/godot_structure.md` if it was left blank, and set up tools when needed ("init chatterbox", "set up my project to use blender"; ComfyUI needs no setup), and "set up characters" if the game has characters and it was not done yet.
 
 ## What the setup creates
 

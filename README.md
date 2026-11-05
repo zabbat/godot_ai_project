@@ -9,8 +9,9 @@ The repo has five working areas. The Godot project can be rebuilt from the other
 ```
 <repo>/
   AGENTS.md          repo map, project paths (incl. each tool's folder), rules
-  docs/              the game design, for people (+ style/, references/)
+  docs/              the game design, for people (+ style/, references/, optional characters/)
   prototype/         the build spec: how it is built in Godot, exact game data, asset map
+                     (+ optional characters/: one resource sheet per character)
   assets/            source resources (images, models, sounds) + provenance; no code
   tools/             one folder per tool:
     godot-sync/        export_assets.py, check_sync.py
@@ -43,6 +44,7 @@ To bring an existing project up to date with the template, ask to migrate it ([r
 | Name | Kind | Purpose |
 |---|---|---|
 | `godot-ai-architecture` | skill | How the repo is organized (areas, tools, project paths, asset map); starting a new project and migrating an old one; holds the canonical `export_assets.py`, `check_sync.py`, asset-map starters and the repo template |
+| `game-character` | skill | Optional, for games with characters: a bible per character (`docs/characters/<type>/<name>/`: by default Appearance, Voice and Background) and a resource sheet (`prototype/characters/<type>/<name>.md`: portraits, model, voice reference, lines, sounds, each with its status); interviews the user, generates what is missing through the tool skills, marks resources outdated when the design changes |
 | `godot-development` | skill | Working inside the Godot project: layout, scenes, Resources, shaders and materials, audio, signals, scripts, testing exports |
 | `godot-shader-effects` | skill | Writing shaders and visual effects, with example `.gdshader` files |
 | `glb-3d-model-and-animations` | skill | Bringing rigged glTF/GLB models and animations into Godot |

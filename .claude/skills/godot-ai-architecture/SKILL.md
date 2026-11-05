@@ -21,12 +21,14 @@ This skill is generic: the project's own paths are in the repository's root `AGE
 <repo>/
   AGENTS.md          map of the repo, project paths, rules (every folder has its own AGENTS.md index)
   docs/              the game, for people: what it is and why. Design only, no engine details.
-    game_design/     systems, features, characters, story (+ standard audio.md, menus.md)
+    game_design/     systems, features, story (+ standard audio.md, menus.md)
+    characters/      optional: one bible per character, by type (game-character skill)
     style/           standard 2d_style.md, 3d_style.md
     references/      what we aim for (style images, mood clips); never used in the game
   prototype/         the build spec: how each feature is built in Godot, exact game data,
                      decided rules, file conventions
     godot_structure.md  map of the Godot project's folders and key files
+    characters/      optional: one resource sheet per character (game-character skill)
     asset_map/       which source asset becomes which Godot file, and how (TOML)
   assets/            source resources (images, models, sounds) + where each came from.
                      Only resources and records: no usage, no code.
@@ -44,6 +46,7 @@ This skill is generic: the project's own paths are in the repository's root `AGE
 - Information flows one way: `docs/` → `prototype/` → `godot/`, and `downloads/` or a tool's `output/` → `assets/` → (asset map) → `godot/`. Godot never reads from the other areas, and nothing raw (zips, downloads, takes) goes inside the Godot project.
 - **The Godot project must be rebuildable** from the other areas alone. Delete `godot/`, hand an agent the docs, prototype and assets, and it should produce a similar game (not identical code, the same game). Git history is for exact restores.
 - **Keep `prototype/godot_structure.md` current**: update it in the same step as creating, moving, renaming or removing a folder or key file in the Godot project, and when refactoring the structure.
+- **Characters (optional)**: a game whose design has characters (heroes, mobs, bosses, the player) keeps each one as a bible in `docs/characters/<type>/<name>/` and a resource sheet in `prototype/characters/<type>/<name>.md`; the `game-character` skill sets this up and keeps it. If those folders exist, a change to a character's files updates its sheet in the same step; a game without characters has neither folder.
 
 ### Project paths
 
@@ -179,7 +182,8 @@ When a recurring job would cost many reads (checking dozens of files against a d
 2. Is it an image, model or sound? Generate or collect it with its tool (takes in the tool's `output/`), copy the chosen master to `assets/` with its provenance, add an entry to `prototype/asset_map/`, and export it with `tools/godot-sync/export_assets.py`; never drop files straight into Godot.
 3. Is it a new tool? Give it a folder in `tools/` with an `AGENTS.md`, add it to `tools/AGENTS.md` and a row to "Project paths", git-ignore its `output/`, and add the output folder to `outputs` in `settings.toml`.
 4. Did you add, move or remove a folder or key file in the Godot project? Update `prototype/godot_structure.md`.
-5. Update the `AGENTS.md` index of every folder where you added, renamed or removed a file.
-6. Run `tools/godot-sync/check_sync.py` (or the `godot-resource-manager` agent) and fix what it reports.
+5. Does it belong to a character (and the project has `prototype/characters/`)? Update the character's resource sheet (`game-character` skill).
+6. Update the `AGENTS.md` index of every folder where you added, renamed or removed a file.
+7. Run `tools/godot-sync/check_sync.py` (or the `godot-resource-manager` agent) and fix what it reports.
 
 How to build the thing inside Godot is the `godot-development` skill's checklist.

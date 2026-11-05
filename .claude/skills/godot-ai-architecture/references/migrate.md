@@ -38,6 +38,8 @@ Old layout → new layout (only what exists):
 - **`.gitignore`**: `tools/*/output/` instead of the workshop folder; move tool-specific lines to their new paths (`tools/blender/models/**/*.blend`, `tools/blender/models/_previews/`); keep `downloads/`, `export/`, `__pycache__/`, `*.blend1`.
 - **Every other doc** that names an old path: `grep -rn "test-shot\|tools/export_assets\|tools/check_sync\|chatterbox/\|blender/\|comfy-ui-asset-generation\|comfy-ui-audio-generation\|init-godot-project" --exclude-dir=.git --exclude-dir=.claude --exclude-dir=godot .` and fix each hit (records in `assets/` that only name a take's file name need no change).
 
+- **Characters (optional)**: if the design docs describe characters but there is no `docs/characters/`, offer the `game-character` skill's "Set up characters" (it can bring the existing characters in). Only if the user wants it; it is not part of the layout change.
+
 ## 4. Check
 
 1. `tools/godot-sync/export_assets.py --dry-run`: nothing should change (the Godot files did not move).
