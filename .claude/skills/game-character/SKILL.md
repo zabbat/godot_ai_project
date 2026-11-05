@@ -7,7 +7,7 @@ description: Keep a game's characters (heroes, mobs, bosses, the player, NPCs) i
 
 A game whose design has characters keeps each of them in one fixed shape, so the AI can ask the right questions, find every file of a character, and generate what is missing. **Optional**: a game without characters (a puzzle game) never sets this up, and nothing here applies until the folders exist.
 
-The repo conventions around it (docs vs prototype, `assets/`, tools, asset map, export) are the `godot-ai-architecture` skill. This skill only adds the character structure on top. The tool skills make the files: `comfy-ui-images` (portraits, cut-outs), `comfy-ui-sound-effects` (creature sounds, deaths), `chatterbox-text-to-speech` (voice reference, spoken lines), `blender-3d-modeling` and `glb-3d-model-and-animations` (models). Building the character in Godot is `godot-development`.
+The repo conventions around it (docs vs prototype, `assets/`, tools, asset map, export) are the `godot-ai-architecture` skill. This skill only adds the character structure on top. The tool skills make the files: `comfy-ui-images` (portraits, cut-outs), `comfy-ui-sound-effects` (creature sounds, deaths), `generate-voice-lines` (voice reference and spoken lines; it runs Kokoro and `chatterbox-text-to-speech`), `blender-3d-modeling` and `glb-3d-model-and-animations` (models). Building the character in Godot is `godot-development`.
 
 | File | What |
 |---|---|
@@ -25,7 +25,7 @@ docs/characters/                         for people: who the characters are
     <name>/                              snake_case, the same name everywhere (zombie, orc_warrior)
       <name>.md                          the character bible
       <name>_ref_<desc>.png              optional design references (concept, outfit, pose)
-      <name>_voice.wav                   optional voice reference clip (see "Voice reference")
+                                         (the voice reference clip is a resource: assets/, see "Voice reference")
 prototype/characters/                    for building: what each character needs in the game
   AGENTS.md                              index + the status values
   <type>/
@@ -109,7 +109,7 @@ When the user says "set up characters", or asks to create a character and `docs/
 "Generate X", "generate all assets for X", "make the missing portraits", or after create/update.
 
 1. Read the bible, the sheet, the type's resource set, the style docs, and [references/resources.md](references/resources.md).
-2. **List the plan before starting**: every row that is `missing` or `outdated` (or only those asked for), with the tool and a one-line prompt summary for each. Ask the user to confirm or trim it. Check the tools that are needed are ready (ComfyUI server running, Chatterbox installed: the tool skills say how).
+2. **List the plan before starting**: every row that is `missing` or `outdated` (or only those asked for), with the tool and a one-line prompt summary for each. Ask the user to confirm or trim it. Check the tools that are needed are ready (ComfyUI server running, Kokoro and Chatterbox installed for voices: the tool skills say how).
 3. **Order** so later resources can build on earlier ones: face portrait (fixes the look) → half portrait (same face and outfit, the face portrait as reference) → 2D in-game graphics → 3D model (portraits as reference) → voice reference → spoken lines (with the voice reference) → sounds.
 4. **For each resource, use its tool skill** (resources.md names it), with prompts built from the bible (the Appearance prompt keywords and the style doc's keywords) and the spec from the type's resource set. Takes go to the tool's `output/` as that skill names them. Set the row to `takes` and name the takes in Notes.
 5. **The user chooses.** Show the takes; never choose a master yourself unless asked to. Then follow the architecture skill: copy the chosen take to the master path with its record, add or update the asset map entry, export. Set the row to `chosen` (and fill Master and Take), or `in game` once Godot uses it (fill In Godot). If the file is new to Godot (no field links it yet), say so: linking it is Godot work.
@@ -128,7 +128,9 @@ When the user says "set up characters", or asks to create a character and `docs/
 
 ## Voice reference
 
-A character that speaks gets one **voice reference**: a 6-15 s clean clip that Chatterbox clones for every line, so all its lines sound like one person. It is a design reference (what the voice should sound like), so its home is the bible folder: `docs/characters/<type>/<name>/<name>_voice.wav`, committed. For Chatterbox, copy it to `<cbx>/voices/<name>.wav` (git-ignored) and register it in `<cbx>/AGENTS.md`. Make it from the bible's "Voice" section (a Chatterbox take with the built-in voice, a recording the user owns, or a licensed clip). **Record its source and rights in the bible**; a recording of a real person is committed only if the user has the rights and says so, otherwise it stays only in `<cbx>/voices/` and the bible records where it came from.
+A character that speaks gets one **voice reference**: a calm 6-8 s clean clip that Chatterbox clones for every line, so all its lines sound like one person. **Making it and every spoken line is the `generate-voice-lines` skill**: it designs the voice with Kokoro from the bible's "Voice" section (or uses a recording the user owns or a licensed clip), and generates lines by kind (greeting, spell call, battle cry...). Hand voice resources to that skill; give it the bible and the sheet.
+
+The clip is a resource, not documentation: its master lives in **`assets/audio/voice/<name>/<name>_voice_reference.wav`** with a `.md` record (the Kokoro recipe, or the source and rights), committed, never in `docs/`. It has no asset map entry (it is not in the game). Chatterbox uses a git-ignored copy at `<cbx>/voices/<name>.wav`, registered in `<cbx>/AGENTS.md`. The bible's Voice section links the master and names the voice blend in one line. A recording of a real person is committed only if the user has the rights and says so; otherwise it stays only in `<cbx>/voices/` and the record says where it came from.
 
 ## Rules
 

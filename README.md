@@ -17,6 +17,7 @@ The repo has five working areas. The Godot project can be rebuilt from the other
     godot-sync/        export_assets.py, check_sync.py
     comfy-ui/          output/images/, output/sound-effects/  (generated takes, git-ignored)
     chatterbox/        settings/, voices/, output/
+    kokoro/            settings/, output/  (voice design, take check)
     blender/           config/, models/
   godot/<project>/   the Godot project
   export/            built game exports (git-ignored)
@@ -52,6 +53,7 @@ To bring an existing project up to date with the template, ask to migrate it ([r
 | `comfy-ui-images` | skill | Generating images (and cutting characters out) with a local ComfyUI server |
 | `comfy-ui-sound-effects` | skill | Generating sound effects with a local ComfyUI Stable Audio graph |
 | `chatterbox-text-to-speech` | skill | Local voice lines with Chatterbox: emotional styles, cloned character voices, batches; `init chatterbox` installs it with uv into the project's Chatterbox folder (locked Python 3.11 in `settings/`, git-ignored `voices/`) |
+| `generate-voice-lines` | skill | A character's voice and lines: designs the voice with Kokoro (one calm 6-8 s reference clip, master in `assets/audio/voice/<name>/`), generates lines by kind (speech, battle) with Chatterbox from it, 5 takes each, Whisper word check and cutting; `init kokoro` installs Kokoro + Whisper into the project's Kokoro folder |
 | `godot-resource-manager` | agent | Syncs assets into Godot and updates the docs from the Godot project |
 
 ## Requirements
@@ -60,7 +62,7 @@ To bring an existing project up to date with the template, ask to migrate it ([r
 - Godot 4 (GDScript only)
 - Python 3.11+ with Pillow, and `ffmpeg`, to run the export and sync scripts
 - A local ComfyUI server, only for the ComfyUI generation skills
-- `uv` and `git`, only for `chatterbox-text-to-speech` (an NVIDIA GPU is recommended)
+- `uv` and `git`, only for `chatterbox-text-to-speech` and `generate-voice-lines` (an NVIDIA GPU is recommended)
 - Docker and `uv`, only for `blender-3d-modeling`
 
 ## Changing the template

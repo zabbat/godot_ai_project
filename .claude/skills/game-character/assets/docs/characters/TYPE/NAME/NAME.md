@@ -14,11 +14,13 @@ Prompt keywords: **(open)** (one line describing the look, reused word for word 
 ## Voice
 
 **(open)** How {{DISPLAY_NAME}} talks: high or low pitch, energetic or
-calm, happy or grim, accent, favourite words.
+calm, happy or grim, accent, favourite words, and when it gets intense
+(battle, anger, fear).
 
 Greeting: **(open)** (what it says when greeting or being chosen)
 
-Voice reference: not made yet
+Voice reference: not made yet (made with the `generate-voice-lines` skill; master in
+`assets/audio/voice/{{NAME}}/`)
 
 ## Background
 

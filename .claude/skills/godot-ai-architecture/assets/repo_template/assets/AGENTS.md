@@ -24,6 +24,9 @@ assets/
     music/                   tracks + sources.md (tool, prompt, link)
     sfx/<category>/<owner>_<event>/  chosen takes of a sound effect + .md each
                              (prompt, seed) + <owner>_<event>_workflow.json
+    voice/<name>/            a character's voice: <name>_voice_reference.wav + .md
+                             (the Kokoro recipe; cloned by Chatterbox, not in the game,
+                             so no map entry) and <name>_<line>/ chosen line takes + .json
 ```
 
 Add a folder when its first resource arrives, and describe it here.

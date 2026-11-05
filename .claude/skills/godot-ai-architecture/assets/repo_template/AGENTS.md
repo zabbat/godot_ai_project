@@ -54,6 +54,7 @@ Godot project (folders, key files, engine version, Godot executable) are in
 | ComfyUI images output | `tools/comfy-ui/output/images/` |
 | ComfyUI sound effects output | `tools/comfy-ui/output/sound-effects/` |
 | Chatterbox (text-to-speech) | `tools/chatterbox/` |
+| Kokoro (voice design, take check) | `tools/kokoro/` |
 | Blender | `tools/blender/` |
 
 ## Rules

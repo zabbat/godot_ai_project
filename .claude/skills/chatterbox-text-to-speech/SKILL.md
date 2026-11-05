@@ -9,6 +9,11 @@ Generates spoken lines on the user's own machine with **Chatterbox** (Resemble A
 API key, no per-line cost). Built for game work: many emotions and delivery styles, a few cloned
 character voices, several takes per line, batches of dialogue.
 
+**A character's voice and lines** (designing the voice, its reference clip, lines by kind such as
+greeting or spell call, word-checked takes) are the `generate-voice-lines` skill, which uses this one
+as its engine. Use this skill directly for installing Chatterbox, one-off lines, and the options of
+`speak.py`.
+
 Bundled with this skill:
 - `assets/project/` — copied into the project's Chatterbox folder by **"init chatterbox"**:
   `settings/pyproject.toml` (locks Python 3.11 + packages), `settings/.python-version`,

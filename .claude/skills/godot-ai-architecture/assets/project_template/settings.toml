@@ -6,7 +6,7 @@ godot_project = "godot/<project>"
 
 # The tools' output folders (every generated take); check_sync.py looks in them for
 # takes newer than the one a master was chosen from. Missing folders are skipped.
-outputs = ["tools/comfy-ui/output", "tools/chatterbox/output"]
+outputs = ["tools/comfy-ui/output", "tools/chatterbox/output", "tools/kokoro/output"]
 
 # Docs check_sync.py compares with the Godot project.
 godot_structure = "prototype/godot_structure.md"
@@ -15,5 +15,6 @@ game_data = "prototype/game_data.md"
 # Godot files check_sync.py does not expect in the asset map (relative to the Godot project).
 not_exported = ["icon.svg"]
 
-# Files in assets/ that are records, not resources, so they need no map entry.
-asset_records = ["*.md", "*.json", "License.txt", ".gitkeep"]
+# Files in assets/ that need no map entry: records, and references that are not in the game
+# (a character's voice reference clip, cloned by Chatterbox; generate-voice-lines skill).
+asset_records = ["*.md", "*.json", "License.txt", ".gitkeep", "*_voice_reference.wav"]

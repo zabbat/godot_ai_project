@@ -1,0 +1,5 @@
+# Generated samples and reference takes (chosen references are copied to assets/)
+output/
+# The uv environment (re-created by `uv sync --project <kok>/settings`)
+settings/.venv/
+__pycache__/

@@ -42,12 +42,13 @@ Then write the **prompt keywords** line: the look as one comma-separated phrase,
 
 ### Voice
 How the character talks. Ask, with options:
-- "High or low pitch? Young or old sounding?"
+- "High or low pitch (for its gender)? Young or old sounding?"
 - "Energetic or calm? Happy, grim, nervous, proud?"
-- "An accent or way of speaking: formal, crude, old-fashioned, few words?"
+- "An accent or way of speaking: formal, crude, old-fashioned, few words? US or UK English?"
 - "Favourite words or a catchphrase?"
-- "What does it say when greeting or being chosen?" Offer 2-3 lines in its personality.
-- "Where should the voice reference come from: a Chatterbox take we generate, your own recording, a licensed clip?" (the rights are written next to it)
+- "When is it intense: in battle, when angry, afraid?" (its main emotional mode; spell calls and battle cries are made in that mode)
+- "What does it say when greeting or being chosen?" Offer 2-3 lines in its personality. "And in battle?" (spell calls, battle cries)
+- "Where should the voice reference come from: a voice we design with Kokoro (the `generate-voice-lines` skill), your own recording, a licensed clip?" (the rights are written in the reference's record)
 - A mob that does not speak: "What sounds does it make: groans, snarls, clicks, silence?" (write it here, or under Appearance if the type has no Voice section)
 
 ### Background

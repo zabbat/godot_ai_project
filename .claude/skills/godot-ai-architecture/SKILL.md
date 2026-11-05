@@ -67,6 +67,7 @@ tools/
     output/images/<xxx>-asset-<desc>/          image takes (comfy-ui-images skill)
     output/sound-effects/<xxx>-sound-<desc>/   sound takes (comfy-ui-sound-effects skill)
   chatterbox/        settings/ (locked uv env), voices/, output/ (chatterbox-text-to-speech skill)
+  kokoro/            settings/ (locked uv env), output/ (voice design + take check; generate-voice-lines skill)
   blender/           config/ (sandbox settings), models/ (.blend work files) (blender-3d-modeling skill)
 ```
 

@@ -1,0 +1,35 @@
+# uv project that locks Kokoro's Python and packages for this repo (generate-voice-lines skill).
+# Kokoro designs character voices (reference clips); faster-whisper + librosa check the takes.
+# Run things with:  uv run --project <kok>/settings <script>
+# The environment (.venv) lives next to this file and is git-ignored; uv.lock IS committed.
+#
+# TORCH BACKEND: "cu128" works for every NVIDIA GPU with driver >= 570 (including RTX 50xx
+# Blackwell, which needs it). Without an NVIDIA GPU, change "pytorch-cu128" to "pytorch-cpu" and
+# ".../whl/cu128" to ".../whl/cpu" below (macOS: delete the torch source line and the index block),
+# then `uv lock`. Kokoro is small: it runs fine on CPU.
+[project]
+name = "kokoro-settings"
+version = "0.1.0"
+description = "Locked Python + packages for Kokoro voice design and the Whisper take check"
+requires-python = "==3.11.*"
+dependencies = [
+    "kokoro>=0.9.4",
+    "soundfile",
+    "torch",
+    # misaki's English phonemizer needs this spaCy model; uv environments have no pip to fetch it later
+    "en-core-web-sm",
+    "faster-whisper>=1.2.1",
+    "librosa>=0.11.0",
+]
+
+[tool.uv]
+override-dependencies = ["torch==2.8.0"]
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu128" }
+en-core-web-sm = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl" }
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
