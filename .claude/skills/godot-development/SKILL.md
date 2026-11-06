@@ -36,6 +36,8 @@ Every scene must be modular: it does one job, has no hard dependency on a specif
 - **Parameterize via exports and signals**, not by editing the shared file per use. If one user needs a variation, use an exported property, a `.tres` override, or an inherited scene.
 - **Rule of three**: the second use is a warning; by the third use, a shared piece must live in its own file in `common/`.
 - **No cross-feature imports of private internals.** A feature folder may depend on `common/`, `resources/`, `assets/` and autoloads, but not reach into another feature's folder. If two features need the same thing, move it to `common/`.
+- **A screen is given what it shows.** Whoever opens a screen passes its data (`open(data, names)`); the screen never `load()`s another feature's resource by path to find something out (a dialog screen asking `defender.tres` for her name). The owner of that data (the level holding the character) passes it in.
+- **Split a script that does several jobs** into child nodes with their own scripts, each with a small public API and signals: a dialog screen that also fades and animates a figure and plays voices becomes the screen, a figure component, a choice list and a voice player. Each piece knows only what it is given (the choice list shows texts and emits an index; it never sees the dialog data).
 
 ## Godot project layout
 
@@ -71,6 +73,7 @@ godot/<project>/
 
 Rules:
 - Folders and files: `snake_case`. Node names and `class_name`: `PascalCase`.
+- **One word, one meaning.** When a new feature takes a word an older one uses for something else (an RPG "dialog" box next to a building's "dialog" popup), rename the older one (`OptionPopup`, `popup_text`) in code, scenes and docs together, so a name always says which thing it is.
 - A scene and its main script share a name: `goblin.tscn` + `goblin.gd`.
 - Don't create a catch-all `scripts/` folder separate from scenes; it splits things that change together.
 - Source art, raw downloads, tool output and docs stay outside the Godot project (repo `assets/`, `tools/`, `docs/`); if something must sit inside it without being imported, add a `.gdignore` file to its folder.
@@ -127,6 +130,8 @@ Guidelines:
 - Resources are **shared by reference**. If an instance must mutate its own copy at runtime (current health, cooldowns), copy the needed values into the node or call `data.duplicate()`. Never mutate a shared `.tres` at runtime.
 - Use `@export_group` / `@export_range` / `@export_enum` to keep Inspectors readable.
 - For collections (all heroes, all upgrades), use a registry Resource holding `Array[HeroData]`, or load a directory with `DirAccess` at startup, instead of long `preload` lists.
+- **When a list gets rules, give it a class.** A bare `Array[LineData]` is fine until its items refer to each other (ids, jumps, branches); then wrap it in its own Resource (`Conversation` with `lines`, `index_of(id)`, `problems()`), so the lookups and the data checks live with the data instead of in every player of it.
+- **Link by id, not by nesting, when data can loop.** A branch that leads back to an earlier point would need a resource that contains itself; let items name their target by an id in the same list instead.
 - Prefer `.tres` (text) over `.res` (binary) so diffs and merges stay readable.
 - Save/load player progress with a dedicated Resource (`SaveData extends Resource`) and `ResourceSaver` to `user://`, never to `res://`.
 
@@ -228,7 +233,7 @@ The editor and headless runs with `--path` use the project's text scripts and re
 
 **Some export bugs are silent**: no error, just a wrong value on the device (a scene's setting replaced by the script's default). An error-free run proves nothing about those, so the test script also checks values: load the scene or resource involved, print the properties the bug touches, and compare the output of the same script run on the project (`--path <project>`) and on the export. To see what the exported file really stores, read `load(path).get_state()` (`SceneState.get_node_property_name()` / `get_node_property_value()`): a property missing there was dropped by the export, not by game code. To find the trigger, make a minimal project in a scratch folder (one script, one scene, the project's `export_presets.cfg` without its keystore lines), declare the property several ways side by side, export it with `--export-pack` and compare. It exports in seconds instead of minutes.
 
-Test scripts follow the same rules as any headless run: a real-time watchdog that quits, no project class names in the test script (use duck typing), and stopping at the first error. Typical export-only failures: preload cycles (see Scripts), scene values of exported packed arrays with a bare `[...]` default dropped (see Scripts), a stale `.godot/exported/` cache shipping an old conversion (step 2), files left out by the export filter, listing `res://` folders with `DirAccess` (exported files are renamed `.remap`/`.import`), wrong upper/lower case in paths (Android is case-sensitive), and editor-only classes used in game code.
+Test scripts follow the same rules as any headless run: a real-time watchdog that quits, no project class names in the test script (use duck typing), and stopping at the first error. To tap the UI in a headless run, send events with `root.push_input(event, true)` in viewport coordinates: the headless window is 0x0, so `Input.parse_input_event` never reaches the GUI. Press a generated `Button` by emitting its `pressed` signal. Typical export-only failures: preload cycles (see Scripts), scene values of exported packed arrays with a bare `[...]` default dropped (see Scripts), a stale `.godot/exported/` cache shipping an old conversion (step 2), files left out by the export filter, listing `res://` folders with `DirAccess` (exported files are renamed `.remap`/`.import`), wrong upper/lower case in paths (Android is case-sensitive), and editor-only classes used in game code.
 
 ## Checklist when adding something new
 
