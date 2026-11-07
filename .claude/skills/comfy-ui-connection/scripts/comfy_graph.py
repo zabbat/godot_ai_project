@@ -17,6 +17,12 @@ usage (run with `uv run --no-project --python 3.12 python -I comfy_graph.py ...`
   comfy_graph.py preview <api.json> SRC_ID[:SLOT] [--id 900]
                                                add a PreviewAny node fed by SRC_ID, so a
                                                text value comes back in the run's outputs
+  comfy_graph.py lora   <api.json> <lora file name> [--strength 0.8] [--after ID] [--id ID]
+                                               insert a LoraLoaderModelOnly after the model
+                                               loader (or after the last LoRA already chained
+                                               there, or after node --after); everything that
+                                               used that model now uses the LoRA's output
+  comfy_graph.py loras  <api.json>             list the LoRA nodes: id, file, strength
 
 The server is $COMFY_LOCAL_URL (http://host:port) or http://127.0.0.1:8188; --server overrides.
 """
@@ -118,6 +124,62 @@ def cmd_preview(a):
     save(a.api, api)
 
 
+MODEL_LOADERS = ("UNETLoader", "CheckpointLoaderSimple", "CheckpointLoader", "UnetLoaderGGUF",
+                 "DiffusionModelLoader", "ImageOnlyCheckpointLoader")
+
+
+def consumers(api, src):
+    """(node id, input name) pairs that read output 0 of node src."""
+    return [(nid, k) for nid, n in api.items() for k, v in n.get("inputs", {}).items()
+            if v == [src, 0]]
+
+
+def is_lora(node):
+    return node.get("class_type", "").startswith("LoraLoader")
+
+
+def cmd_lora(a):
+    api = load(a.api)
+    if a.after:
+        if a.after not in api:
+            sys.exit(f"unknown node: {a.after}")
+        src = a.after
+    else:
+        loaders = [nid for nid, n in api.items() if n.get("class_type") in MODEL_LOADERS]
+        if len(loaders) != 1:
+            sys.exit(f"found {len(loaders)} model loaders {loaders}; pass --after <node id>")
+        src = loaders[0]
+        # Chain after LoRAs that already sit right behind the loader.
+        while True:
+            nxt = [nid for nid, _ in consumers(api, src) if is_lora(api[nid])]
+            if len(nxt) != 1:
+                break
+            src = nxt[0]
+    new_id = a.id or str(max([int(k) for k in api if k.isdigit()] + [0]) + 1000)
+    if new_id in api:
+        sys.exit(f"node id {new_id} already used; pass --id")
+    users = consumers(api, src)
+    if not users:
+        sys.exit(f"nothing reads the model from node {src}")
+    for nid, key in users:
+        api[nid]["inputs"][key] = [new_id, 0]
+    api[new_id] = {"class_type": "LoraLoaderModelOnly",
+                   "inputs": {"lora_name": a.name, "strength_model": a.strength,
+                              "model": [src, 0]},
+                   "_meta": {"title": "Load LoRA"}}
+    save(a.api, api)
+    print(json.dumps({"lora_node": new_id, "after": src,
+                      "now_feeds": [f"{n}.{k}" for n, k in users]}))
+
+
+def cmd_loras(a):
+    api = load(a.api)
+    print(json.dumps([{"id": nid, "lora_name": n["inputs"].get("lora_name"),
+                       "strength_model": n["inputs"].get("strength_model"),
+                       "strength_clip": n["inputs"].get("strength_clip")}
+                      for nid, n in api.items() if is_lora(n)], indent=1))
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--server")
@@ -128,6 +190,10 @@ def main():
     s = sub.add_parser("seed"); s.add_argument("api"); s.add_argument("--node", nargs="*"); s.set_defaults(f=cmd_seed)
     s = sub.add_parser("preview"); s.add_argument("api"); s.add_argument("source")
     s.add_argument("--id", default="900"); s.set_defaults(f=cmd_preview)
+    s = sub.add_parser("lora"); s.add_argument("api"); s.add_argument("name")
+    s.add_argument("--strength", type=float, default=0.8); s.add_argument("--after")
+    s.add_argument("--id"); s.set_defaults(f=cmd_lora)
+    s = sub.add_parser("loras"); s.add_argument("api"); s.set_defaults(f=cmd_loras)
     a = p.parse_args()
     a.f(a)
 

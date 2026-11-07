@@ -66,6 +66,8 @@ tools/
   comfy-ui/
     ComfyUI/                                   only if ComfyUI was installed for this project (comfy-ui-connection skill; git-ignored);
                                                usually an existing install outside the repo is used ("ComfyUI install" row)
+    templates/images/<name>/                   project image templates (comfy-ui-images skill; committed; the skill also bundles defaults)
+    templates/sound-effects/<name>/            project sound templates (comfy-ui-sound-effects skill; committed)
     output/images/<xxx>-asset-<desc>/          image takes (comfy-ui-images skill)
     output/sound-effects/<xxx>-sound-<desc>/   sound takes (comfy-ui-sound-effects skill)
   chatterbox/        settings/ (locked uv env), voices/, output/ (chatterbox-text-to-speech skill)

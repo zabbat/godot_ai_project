@@ -32,7 +32,7 @@ The Godot path of each resource is project-specific (for example `entities/<type
 
 ### Face portrait
 - Make it first: it fixes the character's look, and later images use it as reference.
-- Prompt = the style doc's style keywords + the bible's Appearance **prompt keywords** + framing ("close-up face portrait, face fills most of the frame, three-quarter view") + background from the style doc.
+- Start from the template the style doc names for portraits (`comfy-ui-images`, "The project's style doc"). Prompt = the style doc's style keywords + the bible's Appearance **prompt keywords** + framing ("close-up face portrait, face fills most of the frame, three-quarter view") + background from the style doc.
 - Generate 3-4 takes with different seeds; the user picks one.
 
 ### Half portrait

@@ -1,6 +1,6 @@
 ---
 name: comfy-ui-sound-effects
-description: Use a local ComfyUI (through the comfy-ui-connection skill) running a Stable Audio graph to make game sound effects — impacts, weapon and spell sounds, creature grunts and cries, UI clicks and pickups, short actions, ambience loops — and save each sound with an .md of its prompt and settings. Use when the user says "generate sound", "generate new sound", "make a sound effect", "save" (a ComfyUI audio setup), or otherwise asks to create or capture sound effects with ComfyUI. Not for music or spoken voice lines (chatterbox-text-to-speech does speech).
+description: Use a local ComfyUI (through the comfy-ui-connection skill) running a Stable Audio graph to make game sound effects — impacts, weapon and spell sounds, creature grunts and cries, UI clicks and pickups, short actions, ambience loops — and save each sound with an .md of its prompt and settings. Starts from saved workflow templates (no need to run the graph in ComfyUI first). Use when the user says "generate sound", "generate new sound", "make a sound effect", "save" (a ComfyUI audio setup), "save template", or otherwise asks to create or capture sound effects with ComfyUI. Not for music or spoken voice lines (chatterbox-text-to-speech does speech).
 ---
 
 # ComfyUI sound effects
@@ -22,20 +22,46 @@ skill.
 itself, which install to use, starting the server, reading the current setup, editing and
 running a graph, uploading and downloading files. This skill only uses its steps:
 
-- **current setup** = `comfy_graph.py latest` → `api.json` (to run) + `ui.json` (to keep).
-  The user's rule: after changing anything in ComfyUI, Queue Prompt once; that run is the
-  setup read here. If history is empty, or the latest entry is not the audio graph (no
-  `SaveAudio*` node, for example because an image was generated since), ask the user to queue
-  the audio workflow once.
+- **last run** = `comfy_graph.py latest` → `api.json` (to run) + `ui.json` (to keep). Only
+  used when the user says so, or to save a template. If the latest entry is not an audio
+  graph (no `SaveAudio*` node), ask the user to queue the audio workflow once.
 - **edit** = `comfy_graph.py set` / `seed` / `preview`; **run** = `comfy run --wait`;
   **fetch** = `comfy download <prompt_id>` into a scratch dir, then move the file to its name
   below; **text outputs** = `comfy jobs status <prompt_id>` → `data.text_outputs`.
 
+Always copy a graph to a scratch work dir before editing it; never edit a template or a
+sound's saved graph in place except where a step below says so.
+
+## Which graph to start from
+
+The user doesn't have to run anything in ComfyUI first. In this order:
+
+1. **The user names one**: a template by name, or "use my current setup" → the last run.
+2. **Continuing a sound** ("generate sound", "another take", "use version 3 but longer") →
+   that sound's own `<xxx>-sound-<description>.api.json` (the graph of its latest take). For
+   an earlier take, its frozen `<xxx>-sound-<nr>-<description>.api.json`.
+3. **A new sound** → the **default template**: the project's default if it has one, else the
+   bundled `stable-audio-3-sfx`.
+
+### Templates
+
+A template is a saved audio workflow (API format) with a `.md` whose roles table says which
+node does what. Same layout and "save template [name]" steps as in the `comfy-ui-images`
+skill (export with File → Export (API), or `comfy_graph.py latest` after one run; find the
+roles; clear the description; add it to the index), with these places:
+
+- **Bundled with this skill**: `templates/` in this skill's folder, index `templates/AGENTS.md`.
+  Default: **`stable-audio-3-sfx`**; its `.md` has the node ids and defaults.
+- **The project's own**: the "Project paths" row **"ComfyUI sound templates"** (suggest
+  `tools/comfy-ui/templates/sound-effects/`, committed). Looked in first; a project template
+  with the same name or marked default there wins. "save template" writes here; into the
+  skill only when the user says it's for all projects.
+
 ## The graph
 
-Node ids below are from the user's current Stable Audio workflow (the nodes sit inside a
-subgraph, so ids look like `52:31`). Find nodes by `class_type` and role, not by id, in case the
-graph changes; the ids are a guide.
+Node ids below are from the bundled `stable-audio-3-sfx` template (the nodes sit inside a
+subgraph, so ids look like `52:31`). Another template has its own ids in its `.md`; with a
+last run, find nodes by `class_type` and role.
 
 | Role | Node (id) | Inputs that matter |
 |------|-----------|--------------------|
@@ -89,9 +115,11 @@ Create `<out>` if it doesn't exist.
 <out>/
   <xxx>-sound-<description>/          ← one folder per sound
     <xxx>-sound-<description>.json
+    <xxx>-sound-<description>.api.json
     <xxx>-sound-<description>.md
     <xxx>-sound-<nr>-<description>.mp3
     <xxx>-sound-<nr>-<description>.md
+    <xxx>-sound-<nr>-<description>.api.json
   <yyy>-sound-<description>/          ← the next sound, its own folder
     …
 ```
@@ -112,10 +140,12 @@ it came from.
 
 | File | Versioned? | Behavior |
 |------|-----------|----------|
-| `<xxx>-sound-<description>.json` | no | the reloadable UI workflow; **updated in place** each generate |
+| `<xxx>-sound-<description>.json` | no | the reloadable UI workflow, if one is known (from the template or the last run); **updated in place** each generate |
+| `<xxx>-sound-<description>.api.json` | no | the API graph of the latest take (as run, without the added PreviewAny); **updated in place** each generate; the start for the next take |
 | `<xxx>-sound-<description>.md` | no | the user's `Sound:` / `Notes:` prose; **updated in place**, prose preserved |
 | `<xxx>-sound-<nr>-<description>.mp3` | yes (`nr`) | one per generation, never overwritten |
 | `<xxx>-sound-<nr>-<description>.md` | yes (`nr`) | the exact prompt/settings that produced that `nr`'s sound — **written once, never overwritten** |
+| `<xxx>-sound-<nr>-<description>.api.json` | yes (`nr`) | the exact graph of that take (without the added PreviewAny): rerun it, or "save take N as template" — **written once, never overwritten** |
 
 Keep the file extension the save node produced (`.mp3` from `SaveAudioMP3`; `.flac`, `.wav`
 or `.opus` if the user switches the save node).
@@ -123,7 +153,7 @@ or `.opus` if the user switches the save node).
 ### Determining numbers
 
 Scan the subfolders of `<out>`. Folder names match `^(\d{3})-sound-(.+)$`; per-sound
-files within match `^(\d{3})-sound-(\d+)-(.+)\.(mp3|flac|wav|opus|md)$`.
+files within match `^(\d{3})-sound-(\d+)-(.+)\.(mp3|flac|wav|opus|md|api\.json)$`.
 - **Current sound** = the highest `xxx` folder present.
 - **Next version** for a sound = (max `nr` among its audio / per-sound `.md` files) + 1.
 - **New sound** = (max `xxx`) + 1 → new folder, `nr` resets to 1.
@@ -131,15 +161,17 @@ files within match `^(\d{3})-sound-(\d+)-(.+)\.(mp3|flac|wav|opus|md)$`.
 ## Commands
 
 ### "save"
-Capture the current ComfyUI audio setup without rendering.
-1. Read the current setup (`comfy_graph.py latest`) → UI workflow + API graph.
+Capture the current ComfyUI audio setup (the last run) into a sound without rendering. To keep
+a workflow for reuse, that's "save template" (see "Templates").
+1. Read the last run (`comfy_graph.py latest`) → UI workflow + API graph.
 2. Decide the sound: continue the current one, or a new one if it's a fresh concept. Ask for a
    short description if it isn't obvious.
-3. Write `<xxx>-sound-<description>.json` (UI workflow) and `<xxx>-sound-<description>.md` into
-   `<out>/<xxx>-sound-<description>/` (create it if new).
+3. Write `<xxx>-sound-<description>.json` (UI workflow), `.api.json` (API graph) and
+   `<xxx>-sound-<description>.md` into `<out>/<xxx>-sound-<description>/` (create it if new).
 
 ### "generate sound"  → render into the **current** sound
-1. Read the current setup (`comfy_graph.py latest`) → API graph + UI workflow.
+1. Copy the starting graph (see "Which graph to start from": normally the sound's `.api.json`)
+   to a scratch `api.json`.
 2. Apply what the user asked for with `comfy_graph.py set`: description (`52:31`), length
    (`52:36`), category (`52:43`), enhancer on/off (`52:35`), negative text (`52:7`),
    steps/CFG. If the user gives no length
@@ -150,11 +182,14 @@ Capture the current ComfyUI audio setup without rendering.
    (`sampling_mode.seed`) stays fixed by default, so the same description gives the same
    enhanced prompt; set a new one (`comfy_graph.py set`) when the user wants a different
    interpretation of the description.
-4. Add the `PreviewAny` node (see "Capturing the enhanced prompt").
+4. Save a copy of the graph as it is now: that's the sound's next `.api.json` (step 7).
+   Then add the `PreviewAny` node to the run copy (see "Capturing the enhanced prompt").
 5. Run it: `comfy run --workflow api.json --wait`.
 6. `comfy download <prompt_id>` and move the audio into
    `<out>/<xxx>-sound-<description>/<xxx>-sound-<nr>-<description>.mp3` (next `nr`).
-7. **Update in place** the sound's `.json` (current UI workflow).
+7. **Write** the take's frozen `<xxx>-sound-<nr>-<description>.api.json` and **update in
+   place** the sound's `.api.json` (both the copy from step 4, without the preview node) and,
+   if a UI workflow is known, its `.json`.
 8. **Write** a new per-sound `<xxx>-sound-<nr>-<description>.md` (template below). It is a
    frozen record and is never edited again.
 9. **Play the sound** (see below).
@@ -165,8 +200,9 @@ exactly, turn the enhancer **off** and send the recorded *encoded prompt* direct
 recorded seed.
 
 ### "generate new sound"  → start a **new** sound
-Same as "generate sound" but: `xxx` = max + 1, `nr` = 1, create a fresh
-`<out>/<xxx>-sound-<description>/` folder, and write a fresh sound-level `.json` +
+Same as "generate sound" but: start from the **default template** (or the one the user
+names), `xxx` = max + 1, `nr` = 1, create a fresh `<out>/<xxx>-sound-<description>/` folder,
+and write a fresh sound-level `.json` (if the template has a canvas workflow) + `.api.json` +
 `.md` plus the first per-sound `<xxx>-sound-1-<description>.md`. Derive a 2–3 word slug from the
 description and tell the user (they can rename).
 
@@ -237,6 +273,7 @@ Notes:
 ```markdown
 # <xxx>-<nr> — <Description Title>
 
+Template: <template name, "sound <xxx>-<nr>" or "last run">
 Description: <text of the user-input node>
 Category: <SFX / One-shot>   Enhancer: <on / off>
 Encoded prompt: <the enhanced text from the PreviewAny node, or the description if the enhancer is off>

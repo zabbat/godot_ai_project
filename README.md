@@ -16,7 +16,8 @@ The repo has five working areas. The Godot project can be rebuilt from the other
                      + provenance; no code
   tools/             one folder per tool:
     godot-sync/        export_assets.py, check_sync.py
-    comfy-ui/          output/images/, output/sound-effects/  (generated takes, git-ignored);
+    comfy-ui/          templates/images/, templates/sound-effects/  (the project's own workflow templates, committed);
+                       output/images/, output/sound-effects/  (generated takes, git-ignored);
                        ComfyUI/ only if installed for the project (usually an existing install is used)
     chatterbox/        settings/, voices/, output/
     kokoro/            settings/, output/  (voice design, take check)
@@ -52,12 +53,30 @@ To bring an existing project up to date with the template, ask to migrate it ([r
 | `godot-shader-effects` | skill | Writing shaders and visual effects, with example `.gdshader` files |
 | `glb-3d-model-and-animations` | skill | Bringing rigged glTF/GLB models and animations into Godot |
 | `blender-3d-modeling` | skill | Modeling, animating and exporting in Blender through the Blender MCP, sandboxed in Docker or a VM; sets a project up with its own `.mcp.json` and Blender folder (Dockerfile and launcher in its `assets/docker/`) |
-| `comfy-ui-connection` | skill | The one place that knows how to reach ComfyUI, through Comfy-Org's `comfy-cli`: installs comfy-cli (`uv tool`), picks the ComfyUI install (an existing one, or a new one in `tools/comfy-ui/ComfyUI/`), starts and checks the server, reads the current setup, runs graphs, uploads and downloads; `scripts/comfy_graph.py` edits API graphs. The two skills below build on it |
-| `comfy-ui-images` | skill | Generating images (and cutting characters out) with ComfyUI, through `comfy-ui-connection` |
-| `comfy-ui-sound-effects` | skill | Generating sound effects with a ComfyUI Stable Audio graph, through `comfy-ui-connection` |
+| `comfy-ui-connection` | skill | The one place that knows how to reach ComfyUI, through Comfy-Org's `comfy-cli` (local only, no Comfy Cloud): installs comfy-cli (`uv tool`), picks the ComfyUI install (an existing one, or a new one in `tools/comfy-ui/ComfyUI/`), starts and checks the server, runs graphs, uploads and downloads, fixes failed runs; `scripts/comfy_graph.py` reads the last run and edits API graphs (prompt, seed, size, adding LoRAs); hands a graph to the user to edit on the canvas. The two skills below build on it |
+| `comfy-ui-images` | skill | Generating images (and cutting characters out) from workflow templates: bundled `z-image-turbo` (default, built-in nodes only) and `z-image-turbo-res4lyf`, or the project's own; adds LoRAs on request; "save this" makes a take into a project template, linked from the 2D style doc |
+| `comfy-ui-sound-effects` | skill | Generating sound effects from workflow templates: bundled `stable-audio-3-sfx` (Stable Audio 3 + an LLM prompt enhancer), or the project's own |
 | `chatterbox-text-to-speech` | skill | Local voice lines with Chatterbox: emotional styles, cloned character voices, batches; `init chatterbox` installs it with uv into the project's Chatterbox folder (locked Python 3.11 in `settings/`, git-ignored `voices/`) |
 | `generate-voice-lines` | skill | A character's voice and lines: designs the voice with Kokoro (one calm 6-8 s reference clip, master in `assets/audio/voice/<name>/`), generates lines by kind (speech, battle) with Chatterbox from it, 5 takes each, Whisper word check and cutting; `init kokoro` installs Kokoro + Whisper into the project's Kokoro folder |
 | `godot-resource-manager` | agent | Syncs assets into Godot and updates the docs from the Godot project |
+
+## ComfyUI images and sounds
+
+`comfy-ui-images` and `comfy-ui-sound-effects` say *what* to make and where to keep it;
+`comfy-ui-connection` is the only skill that talks to ComfyUI (through `comfy-cli`).
+
+- **Templates, not "run it first".** Each generation starts from a saved workflow template (an
+  API-format graph plus a `.md` saying which node holds the prompt, seed, size...). The skills
+  bundle defaults; a project adds its own in `tools/comfy-ui/templates/`. Make one by exporting
+  from ComfyUI (File → Export (API)), from one run, or from a take you like ("save this as
+  fantasy-portrait").
+- **Every take keeps its graph** (`<xxx>-asset-<nr>-<desc>.api.json` next to the image and its
+  `.md`), so any take can be rerun or turned into a template.
+- **The style doc decides.** `docs/style/2d_style.md` names the template, prompt keywords and
+  size per kind of art (portraits, icons, UI); the image skill follows it.
+- **Use an existing ComfyUI** when there is one (models are large). comfy-cli only sends it
+  jobs; it never launches, updates or installs nodes into it. On Windows with Smart App Control
+  on, a fresh install is blocked at start; the skill checks before offering one.
 
 ## Character voices
 
@@ -78,7 +97,7 @@ testing. The tests and lessons behind it are in [voice_gen_context.md](voice_gen
 - Claude Code
 - Godot 4 (GDScript only)
 - Python 3.11+ with Pillow, and `ffmpeg`, to run the export and sync scripts
-- ComfyUI and `comfy-cli` (installed with `uv tool install comfy-cli`), only for the ComfyUI skills; the `comfy-ui-connection` skill offers to install both, or uses an existing ComfyUI
+- ComfyUI and `comfy-cli` (installed with `uv tool install comfy-cli`), only for the ComfyUI skills; the `comfy-ui-connection` skill offers to install both, or uses an existing ComfyUI. The default templates need these models: images `z_image_turbo_bf16.safetensors`, `qwen_3_4b.safetensors`, `ae.safetensors` (ComfyUI's Z-Image Turbo template downloads them); sounds `stable_audio_3_medium_base.safetensors`, `t5gemma_b_b_ul2.safetensors`, `qwen3.5_2b_bf16.safetensors`. Cut-outs need Impact Pack + Subpack with the YOLO person and SAM models
 - `uv` and `git`, only for `chatterbox-text-to-speech` and `generate-voice-lines` (an NVIDIA GPU is recommended; Kokoro and the Whisper check also run on CPU). First use downloads the models (Chatterbox several GB, Kokoro ~330 MB, Whisper ~460 MB) into the shared Hugging Face cache
 - Docker and `uv`, only for `blender-3d-modeling`
 
