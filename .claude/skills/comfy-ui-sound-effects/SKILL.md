@@ -1,6 +1,6 @@
 ---
 name: comfy-ui-sound-effects
-description: Drive a local ComfyUI server running a Stable Audio graph to make game sound effects — impacts, weapon and spell sounds, creature grunts and cries, UI clicks and pickups, short actions, ambience loops — and save each sound with an .md of its prompt and settings. Use when the user says "generate sound", "generate new sound", "make a sound effect", "save" (a ComfyUI audio setup), or otherwise asks to create or capture sound effects with ComfyUI. Not for music or spoken voice lines (chatterbox-text-to-speech does speech).
+description: Use a local ComfyUI (through the comfy-ui-connection skill) running a Stable Audio graph to make game sound effects — impacts, weapon and spell sounds, creature grunts and cries, UI clicks and pickups, short actions, ambience loops — and save each sound with an .md of its prompt and settings. Use when the user says "generate sound", "generate new sound", "make a sound effect", "save" (a ComfyUI audio setup), or otherwise asks to create or capture sound effects with ComfyUI. Not for music or spoken voice lines (chatterbox-text-to-speech does speech).
 ---
 
 # ComfyUI sound effects
@@ -16,34 +16,20 @@ actions, ambience and effect loops. Music and instrument parts are out of scope:
 sound effects and ask whether to try anyway. Spoken lines are the `chatterbox-text-to-speech`
 skill.
 
-## Server
+## Talking to ComfyUI: the `comfy-ui-connection` skill
 
-- Base URL: `http://127.0.0.1:8188`
-- Confirm it's up: `GET /system_stats`.
-- Key endpoints:
-  - `GET /history?max_items=1` — the most recent run. `prompt[2]` = API graph (executable),
-    `prompt[3].extra_pnginfo.workflow` = UI graph (the reloadable canvas), `outputs` = saved
-    files.
-  - `POST /prompt` with `{"prompt": <API graph>}` — queue a render; returns `{"prompt_id": ...}`.
-  - `GET /history/{prompt_id}` — poll until it appears (= done); read `outputs`.
-  - `GET /view?filename=<f>&subfolder=<s>&type=output` — download a generated file's bytes.
-- If the server is unreachable, tell the user to start ComfyUI and stop.
-- Use ComfyUI's own Python for scripts that read and post graphs (`python` is not on the PATH):
-  `C:\ai\ComfyUI_windows_portable\python_embeded\python.exe` (from Git Bash:
-  `/c/ai/ComfyUI_windows_portable/python_embeded/python.exe`). The standard library
-  (`json`, `urllib.request`, `random`) is enough. Run it with `-I` and keep scripts in the
-  scratchpad, not in the ComfyUI folder.
+**Load the `comfy-ui-connection` skill first.** It covers everything about reaching ComfyUI: comfy-cli
+itself, which install to use, starting the server, reading the current setup, editing and
+running a graph, uploading and downloading files. This skill only uses its steps:
 
-## Source of truth = latest ComfyUI history
-
-The server cannot see the *unsaved* browser canvas. So the rule the user follows:
-
-> **After changing anything in ComfyUI, Queue Prompt once.** That run becomes the latest
-> history entry — the current setup I read from.
-
-Whenever a command needs "the current setup," read it from `GET /history?max_items=1`. If
-history is empty, or the latest entry is not the audio graph (no `SaveAudio*` node, for example
-because an image was generated since), ask the user to Queue the audio workflow once in ComfyUI.
+- **current setup** = `comfy_graph.py latest` → `api.json` (to run) + `ui.json` (to keep).
+  The user's rule: after changing anything in ComfyUI, Queue Prompt once; that run is the
+  setup read here. If history is empty, or the latest entry is not the audio graph (no
+  `SaveAudio*` node, for example because an image was generated since), ask the user to queue
+  the audio workflow once.
+- **edit** = `comfy_graph.py set` / `seed` / `preview`; **run** = `comfy run --wait`;
+  **fetch** = `comfy download <prompt_id>` into a scratch dir, then move the file to its name
+  below; **text outputs** = `comfy jobs status <prompt_id>` → `data.text_outputs`.
 
 ## The graph
 
@@ -68,15 +54,16 @@ graph changes; the ids are a guide.
 ### Capturing the enhanced prompt
 
 When the enhancer is on, the text that actually reaches the sampler is generated inside the run
-and does not appear in `outputs`. Before posting, **add a preview node** to the API graph so the
-text comes back:
+and is not a saved file. Before running, **add a preview node** to the API graph so the text
+comes back:
 
-```json
-"900": { "class_type": "PreviewAny", "inputs": { "source": ["52:28", 0] } }
+```bash
+comfy_graph.py preview api.json 52:28 --id 900
 ```
 
-After the run, read it from `outputs["900"].text[0]` and record it in the per-sound `.md`. Use
-an id that isn't already in the graph. Don't add this node to the saved UI workflow.
+After the run, read it from `comfy jobs status <prompt_id>` → `data.text_outputs["900"]` and
+record it in the per-sound `.md`. Use an id that isn't already in the graph. Don't add this
+node to the saved UI workflow.
 
 ## Where the output goes
 
@@ -145,25 +132,27 @@ files within match `^(\d{3})-sound-(\d+)-(.+)\.(mp3|flac|wav|opus|md)$`.
 
 ### "save"
 Capture the current ComfyUI audio setup without rendering.
-1. Read latest history → UI workflow + API graph.
+1. Read the current setup (`comfy_graph.py latest`) → UI workflow + API graph.
 2. Decide the sound: continue the current one, or a new one if it's a fresh concept. Ask for a
    short description if it isn't obvious.
 3. Write `<xxx>-sound-<description>.json` (UI workflow) and `<xxx>-sound-<description>.md` into
    `<out>/<xxx>-sound-<description>/` (create it if new).
 
 ### "generate sound"  → render into the **current** sound
-1. Read latest history → API graph + UI workflow.
-2. Apply what the user asked for: description (`52:31`), length (`52:36`), category (`52:43`),
-   enhancer on/off (`52:35`), negative text (`52:7`), steps/CFG. If the user gives no length
+1. Read the current setup (`comfy_graph.py latest`) → API graph + UI workflow.
+2. Apply what the user asked for with `comfy_graph.py set`: description (`52:31`), length
+   (`52:36`), category (`52:43`), enhancer on/off (`52:35`), negative text (`52:7`),
+   steps/CFG. If the user gives no length
    or category, **guess them from the sound** (see "Guessing length and category") and say what
    you picked.
-3. **Randomize the KSampler `seed`** to a fresh int so you get a new variation instead of a
-   cached repeat — unless the user says to keep it. The enhancer seed (`sampling_mode.seed`)
-   stays fixed by default, so the same description gives the same enhanced prompt; randomize it
-   too when the user wants a different interpretation of the description.
+3. **Randomize the KSampler `seed`** (`comfy_graph.py seed --node 52:3`) so you get a new
+   variation instead of a cached repeat — unless the user says to keep it. The enhancer seed
+   (`sampling_mode.seed`) stays fixed by default, so the same description gives the same
+   enhanced prompt; set a new one (`comfy_graph.py set`) when the user wants a different
+   interpretation of the description.
 4. Add the `PreviewAny` node (see "Capturing the enhanced prompt").
-5. `POST /prompt`, poll `GET /history/{prompt_id}` until complete.
-6. Download the audio from the save node's output via `/view` and save it as
+5. Run it: `comfy run --workflow api.json --wait`.
+6. `comfy download <prompt_id>` and move the audio into
    `<out>/<xxx>-sound-<description>/<xxx>-sound-<nr>-<description>.mp3` (next `nr`).
 7. **Update in place** the sound's `.json` (current UI workflow).
 8. **Write** a new per-sound `<xxx>-sound-<nr>-<description>.md` (template below). It is a

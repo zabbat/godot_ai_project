@@ -1,6 +1,6 @@
 ---
 name: comfy-ui-images
-description: Drive a local ComfyUI server — save the current workflow + prompt to local files, generate images on request, and cut a character out of an image (transparent background). Use when the user says "save" (a ComfyUI setup), "generate image", "generate new image", "cut out", "remove the background" or "make it transparent", or otherwise asks to capture/run ComfyUI prompts, LoRAs, or settings.
+description: Make images with a local ComfyUI (through the comfy-ui-connection skill) — save the current workflow + prompt to local files, generate images on request, and cut a character out of an image (transparent background). Use when the user says "save" (a ComfyUI setup), "generate image", "generate new image", "cut out", "remove the background" or "make it transparent", or otherwise asks to capture/run ComfyUI prompts, LoRAs, or settings.
 ---
 
 # ComfyUI images
@@ -11,35 +11,24 @@ holds the creative settings (model, LoRAs, sampler, seed, prompt) as a node grap
 generates images on command, and cuts characters out of images (transparent background,
 see "cut out").
 
-Files in this skill's folder: `scripts/cutout.py` (the cut-out run) and
+Files in this skill's folder: `scripts/cutout.py` (writes the cut-out graph) and
 `templates/cutout_transparent.json` (the same graph as a ComfyUI canvas workflow).
 
 If the project has a 2D style doc (`docs/style/2d_style.md`), follow it when writing prompts:
 it holds the style keywords, LoRA and settings for each kind of 2D art. If the part you need
 says "No style defined yet", ask the user for the style instead of inventing one.
 
-## Server
+## Talking to ComfyUI: the `comfy-ui-connection` skill
 
-- Base URL: `http://127.0.0.1:8188`
-- Confirm it's up: `GET /system_stats`.
-- Key endpoints:
-  - `GET /history?max_items=1` — the most recent run. `prompt[1]` = API graph (executable),
-    `prompt[3].extra_pnginfo.workflow` = UI graph (the reloadable canvas), `outputs` = saved
-    image filenames.
-  - `POST /prompt` with `{"prompt": <API graph>}` — queue a render; returns `{"prompt_id": ...}`.
-  - `GET /history/{prompt_id}` — poll until it appears (= done); read `outputs`.
-  - `GET /view?filename=<f>&subfolder=<s>&type=output` — download a generated image's bytes.
-- If the server is unreachable, tell the user to start ComfyUI and stop.
+**Load the `comfy-ui-connection` skill first.** It covers everything about reaching ComfyUI: comfy-cli
+itself, which install to use, starting the server, reading the current setup, editing and
+running a graph, uploading and downloading files. This skill only uses its steps:
 
-## Source of truth = latest ComfyUI history
-
-The server cannot see the *unsaved* browser canvas. So the rule the user follows:
-
-> **After changing anything in ComfyUI, Queue Prompt once.** That run becomes the latest
-> history entry — the current setup I read from.
-
-Whenever a command needs "the current setup," read it from `GET /history?max_items=1`.
-If history is empty, ask the user to Queue Prompt once in ComfyUI first.
+- **current setup** = `comfy_graph.py latest` → `api.json` (to run) + `ui.json` (to keep).
+  The user's rule: after changing anything in ComfyUI, Queue Prompt once; that run is the
+  setup read here. Empty history → ask them to queue once.
+- **edit** = `comfy_graph.py set` / `seed`; **run** = `comfy run --wait`; **fetch** =
+  `comfy download <prompt_id>` into a scratch dir, then move the file to its name below.
 
 ## Where the output goes
 
@@ -108,7 +97,7 @@ Scan the asset subfolders under `<out>`. Folder names match
 
 ### "save"
 Capture the current ComfyUI setup without rendering.
-1. Read latest history → UI workflow + API graph.
+1. Read the current setup (`comfy_graph.py latest`) → UI workflow + API graph.
 2. Determine asset: if continuing the current asset, reuse its `xxx`/`description`; if it's a
    fresh concept, treat as a new asset (see "generate new image" numbering). Ask the user for
    a short description if it isn't obvious.
@@ -116,12 +105,12 @@ Capture the current ComfyUI setup without rendering.
    into the asset's folder `<out>/<xxx>-asset-<description>/` (create it if new).
 
 ### "generate image"  → render into the **current** asset
-1. Read latest history → API graph + UI workflow.
-2. **Randomize the seed** in the API graph (set `seed`/`noise_seed` on KSampler-type nodes to a
-   fresh random int) so you get a new variation rather than a cached repeat — unless the user
-   says to keep the seed.
-3. `POST /prompt`, poll `GET /history/{prompt_id}` until complete.
-4. Download the output via `/view` and save into the asset's folder as
+1. Read the current setup (`comfy_graph.py latest`) → API graph + UI workflow. Apply the
+   user's changes (prompt text etc.) with `comfy_graph.py set`.
+2. **Randomize the seed** (`comfy_graph.py seed`: every `seed`/`noise_seed` on the samplers)
+   so you get a new variation rather than a cached repeat — unless the user says to keep it.
+3. Run it: `comfy run --workflow api.json --wait`.
+4. `comfy download <prompt_id>` and move the image into the asset's folder as
    `<out>/<xxx>-asset-<description>/<xxx>-asset-<nr>-<description>.png` (next `nr`).
 5. **Update in place** the asset's `.json` (current UI workflow) — reloadable canvas state.
 6. **Write** (don't overwrite anything) a new per-image
@@ -153,12 +142,17 @@ be installed (the script checks and names anything missing):
    flat background in a colour the figure doesn't have** (e.g. dark slate blue behind white
    clothes); when generating art meant for cutting out, say so in the prompt (see the
    project's style doc, if any, for its cut-out rules).
-2. **Run** `scripts/cutout.py` (in this skill's folder) with ComfyUI's Python:
-   ```
-   <python.exe> -I <skill>/scripts/cutout.py <source.png> <out.png> --graph-out <graph.json>
-   ```
-   Options: `--shrink N` (px the mask shrinks to drop a fringe of background colour,
-   default 1), `--blur S` (edge blur sigma, default 1.0; lower = harder edge).
+2. **Run** it with comfy-cli (commands as in the `comfy-ui-connection` skill):
+   1. `comfy upload <source.png>` → the image's name on the server.
+   2. Write the graph with `scripts/cutout.py` (in this skill's folder):
+      ```
+      uv run --no-project --python 3.12 python -I <skill>/scripts/cutout.py <name> <graph.json>
+      ```
+      Options: `--shrink N` (px the mask shrinks to drop a fringe of background colour,
+      default 1), `--blur S` (edge blur sigma, default 1.0; lower = harder edge).
+   3. `comfy workflow validate --workflow <graph.json>`: names a missing node or model.
+   4. `comfy run --workflow <graph.json> --wait`, then `comfy download <prompt_id>`.
+
    The graph: YOLO person segmentation → SAM refines the outline → combined mask → shrink
    1 px → slight blur → invert (JoinImageWithAlpha turns `1 - mask` into alpha) → join
    with the image as alpha → save PNG.
@@ -173,8 +167,9 @@ be installed (the script checks and names anything missing):
 5. **Display** it (see below).
 
 The same graph is saved as a canvas workflow in `templates/cutout_transparent.json`. If the
-user wants it in ComfyUI's workflow list and it isn't there yet, copy it to
-`ComfyUI/user/default/workflows/` (load an image in its Load Image node before running).
+user wants it in ComfyUI's workflow list and it isn't there yet, save it there with
+`comfy workflow save --where local` (see `comfy workflow save --help`), or copy it to
+`<install>/user/default/workflows/`. Load an image in its Load Image node before running.
 
 For finer hair edges ComfyUI's built-in **RemoveBackground** node (BiRefNet) is better, but
 it needs a BiRefNet model in `models/background_removal/`; ask the user before downloading

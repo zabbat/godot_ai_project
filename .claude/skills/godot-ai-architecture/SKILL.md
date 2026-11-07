@@ -64,6 +64,8 @@ tools/
   AGENTS.md          index: one line per tool
   godot-sync/        generic scripts: export_assets.py, check_sync.py
   comfy-ui/
+    ComfyUI/                                   only if ComfyUI was installed for this project (comfy-ui-connection skill; git-ignored);
+                                               usually an existing install outside the repo is used ("ComfyUI install" row)
     output/images/<xxx>-asset-<desc>/          image takes (comfy-ui-images skill)
     output/sound-effects/<xxx>-sound-<desc>/   sound takes (comfy-ui-sound-effects skill)
   chatterbox/        settings/ (locked uv env), voices/, output/ (chatterbox-text-to-speech skill)

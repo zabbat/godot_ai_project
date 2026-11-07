@@ -16,7 +16,8 @@ The repo has five working areas. The Godot project can be rebuilt from the other
                      + provenance; no code
   tools/             one folder per tool:
     godot-sync/        export_assets.py, check_sync.py
-    comfy-ui/          output/images/, output/sound-effects/  (generated takes, git-ignored)
+    comfy-ui/          output/images/, output/sound-effects/  (generated takes, git-ignored);
+                       ComfyUI/ only if installed for the project (usually an existing install is used)
     chatterbox/        settings/, voices/, output/
     kokoro/            settings/, output/  (voice design, take check)
     blender/           config/, models/
@@ -51,8 +52,9 @@ To bring an existing project up to date with the template, ask to migrate it ([r
 | `godot-shader-effects` | skill | Writing shaders and visual effects, with example `.gdshader` files |
 | `glb-3d-model-and-animations` | skill | Bringing rigged glTF/GLB models and animations into Godot |
 | `blender-3d-modeling` | skill | Modeling, animating and exporting in Blender through the Blender MCP, sandboxed in Docker or a VM; sets a project up with its own `.mcp.json` and Blender folder (Dockerfile and launcher in its `assets/docker/`) |
-| `comfy-ui-images` | skill | Generating images (and cutting characters out) with a local ComfyUI server |
-| `comfy-ui-sound-effects` | skill | Generating sound effects with a local ComfyUI Stable Audio graph |
+| `comfy-ui-connection` | skill | The one place that knows how to reach ComfyUI, through Comfy-Org's `comfy-cli`: installs comfy-cli (`uv tool`), picks the ComfyUI install (an existing one, or a new one in `tools/comfy-ui/ComfyUI/`), starts and checks the server, reads the current setup, runs graphs, uploads and downloads; `scripts/comfy_graph.py` edits API graphs. The two skills below build on it |
+| `comfy-ui-images` | skill | Generating images (and cutting characters out) with ComfyUI, through `comfy-ui-connection` |
+| `comfy-ui-sound-effects` | skill | Generating sound effects with a ComfyUI Stable Audio graph, through `comfy-ui-connection` |
 | `chatterbox-text-to-speech` | skill | Local voice lines with Chatterbox: emotional styles, cloned character voices, batches; `init chatterbox` installs it with uv into the project's Chatterbox folder (locked Python 3.11 in `settings/`, git-ignored `voices/`) |
 | `generate-voice-lines` | skill | A character's voice and lines: designs the voice with Kokoro (one calm 6-8 s reference clip, master in `assets/audio/voice/<name>/`), generates lines by kind (speech, battle) with Chatterbox from it, 5 takes each, Whisper word check and cutting; `init kokoro` installs Kokoro + Whisper into the project's Kokoro folder |
 | `godot-resource-manager` | agent | Syncs assets into Godot and updates the docs from the Godot project |
@@ -76,7 +78,7 @@ testing. The tests and lessons behind it are in [voice_gen_context.md](voice_gen
 - Claude Code
 - Godot 4 (GDScript only)
 - Python 3.11+ with Pillow, and `ffmpeg`, to run the export and sync scripts
-- A local ComfyUI server, only for the ComfyUI generation skills
+- ComfyUI and `comfy-cli` (installed with `uv tool install comfy-cli`), only for the ComfyUI skills; the `comfy-ui-connection` skill offers to install both, or uses an existing ComfyUI
 - `uv` and `git`, only for `chatterbox-text-to-speech` and `generate-voice-lines` (an NVIDIA GPU is recommended; Kokoro and the Whisper check also run on CPU). First use downloads the models (Chatterbox several GB, Kokoro ~330 MB, Whisper ~460 MB) into the shared Hugging Face cache
 - Docker and `uv`, only for `blender-3d-modeling`
 

@@ -1,54 +1,23 @@
-"""Cut a person or character out of an image with a local ComfyUI, saving a PNG with a
-transparent background.
+"""Write the ComfyUI API graph that cuts a person or character out of an image, giving a
+PNG with a transparent background. Running it (upload, validate, run, download) is done with
+comfy-cli, see the comfy-ui-connection skill.
 
 How: YOLO person segmentation (Impact Pack) finds the figure, SAM refines the outline, the
 mask is shrunk 1 px (drops a fringe of background colour) and slightly blurred (soft edge),
 then joined to the image as its alpha. Everything runs locally; no model is downloaded.
 
-usage (run with ComfyUI's embedded Python, `-I`):
-  python cutout.py <input image> <output.png> [--graph-out graph.json]
-                   [--shrink 1] [--blur 1.0] [--server http://127.0.0.1:8188]
+usage:
+  cutout.py <image name on the server> <graph.json> [--shrink 1] [--blur 1.0]
 
+<image name on the server> is the name `comfy upload` returned (the file in ComfyUI's input/).
+Needs Impact Pack + Impact Subpack, models/ultralytics/segm/person_yolov8m-seg.pt and
+models/sams/sam_vit_h_4b8939.pth; `comfy workflow validate` names whatever is missing.
 Works best on a figure drawn on a plain background in a colour the figure doesn't have.
 """
-import argparse, json, os, sys, time, urllib.parse, urllib.request, uuid
+import argparse, json
 
 YOLO_MODEL = "segm/person_yolov8m-seg.pt"
 SAM_MODEL = "sam_vit_h_4b8939.pth"
-NEEDED_NODES = ["UltralyticsDetectorProvider", "SAMLoader", "ImpactSimpleDetectorSEGS",
-                "SegsToCombinedMask", "GrowMask", "MaskToImage", "ImageBlur", "ImageToMask",
-                "InvertMask", "JoinImageWithAlpha", "LoadImage", "SaveImage"]
-
-
-def get(base, path):
-    with urllib.request.urlopen(base + path, timeout=60) as r:
-        return r.read()
-
-
-def check_setup(base):
-    """Exits with a clear message when a node or model the graph needs is missing."""
-    info = json.loads(get(base, "/object_info"))
-    missing = [n for n in NEEDED_NODES if n not in info]
-    if missing:
-        sys.exit(f"Missing ComfyUI nodes: {missing} (Impact Pack and Impact Subpack provide the detector nodes)")
-    yolo = info["UltralyticsDetectorProvider"]["input"]["required"]["model_name"][0]
-    sam = info["SAMLoader"]["input"]["required"]["model_name"][0]
-    if YOLO_MODEL not in yolo:
-        sys.exit(f"Missing model {YOLO_MODEL} in models/ultralytics/ (found: {yolo})")
-    if SAM_MODEL not in sam:
-        sys.exit(f"Missing model {SAM_MODEL} in models/sams/ (found: {sam})")
-
-
-def upload(base, path):
-    boundary = uuid.uuid4().hex
-    name = os.path.basename(path)
-    body = (f"--{boundary}\r\nContent-Disposition: form-data; name=\"image\"; filename=\"{name}\"\r\n"
-            "Content-Type: application/octet-stream\r\n\r\n").encode() + open(path, "rb").read() + \
-        (f"\r\n--{boundary}\r\nContent-Disposition: form-data; name=\"overwrite\"\r\n\r\ntrue"
-         f"\r\n--{boundary}--\r\n").encode()
-    req = urllib.request.Request(base + "/upload/image", body,
-                                 {"Content-Type": f"multipart/form-data; boundary={boundary}"})
-    return json.loads(urllib.request.urlopen(req, timeout=60).read())["name"]
 
 
 def graph(image_name, shrink, blur):
@@ -79,35 +48,14 @@ def graph(image_name, shrink, blur):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("input")
-    parser.add_argument("output")
-    parser.add_argument("--graph-out", help="also write the API graph used here")
+    parser.add_argument("image", help="image name on the server (from `comfy upload`)")
+    parser.add_argument("graph_out", help="where to write the API graph")
     parser.add_argument("--shrink", type=int, default=1, help="pixels to shrink the mask (0: none)")
     parser.add_argument("--blur", type=float, default=1.0, help="edge blur sigma (0.1 = nearly hard)")
-    parser.add_argument("--server", default="http://127.0.0.1:8188")
     args = parser.parse_args()
-
-    check_setup(args.server)
-    g = graph(upload(args.server, args.input), args.shrink, args.blur)
-    if args.graph_out:
-        json.dump(g, open(args.graph_out, "w", encoding="utf-8"), indent=2)
-    req = urllib.request.Request(args.server + "/prompt", json.dumps({"prompt": g}).encode(),
-                                 {"Content-Type": "application/json"})
-    pid = json.loads(urllib.request.urlopen(req, timeout=60).read())["prompt_id"]
-    for _ in range(600):
-        h = json.loads(get(args.server, "/history/" + pid))
-        if pid in h and (h[pid].get("outputs") or h[pid].get("status", {}).get("status_str") == "error"):
-            break
-        time.sleep(1)
-    else:
-        sys.exit("timed out waiting for ComfyUI")
-    status = h[pid].get("status", {})
-    if status.get("status_str") == "error":
-        sys.exit("ComfyUI error: " + json.dumps(status.get("messages"))[:2000])
-    img = next(i for o in h[pid]["outputs"].values() for i in o.get("images", []))
-    q = urllib.parse.urlencode({"filename": img["filename"], "subfolder": img["subfolder"], "type": "output"})
-    open(args.output, "wb").write(get(args.server, "/view?" + q))
-    print("saved", args.output)
+    with open(args.graph_out, "w", encoding="utf-8") as f:
+        json.dump(graph(args.image, args.shrink, args.blur), f, indent=2)
+    print(args.graph_out)
 
 
 main()
