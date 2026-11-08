@@ -1,0 +1,14 @@
+# Kokoro in Docker (generate-voice-lines skill, "Kokoro in Docker").
+# Copied to <kok>/docker/compose.yaml by "init kokoro" when the user chooses Docker.
+# Kokoro-FastAPI: Kokoro-82M as a local HTTP server (CPU build; short clips render in seconds).
+# Pinned version: change it only on purpose and note the new tag in <kok>/AGENTS.md.
+#   start: docker compose -f <kok>/docker/compose.yaml up -d
+#   check: curl http://127.0.0.1:8880/v1/audio/voices
+#   stop:  docker compose -f <kok>/docker/compose.yaml down
+services:
+  kokoro:
+    image: ghcr.io/remsky/kokoro-fastapi-cpu:v0.2.4
+    container_name: kokoro
+    ports:
+      - "127.0.0.1:8880:8880"   # local only
+    restart: "no"

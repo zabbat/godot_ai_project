@@ -57,7 +57,7 @@ To bring an existing project up to date with the template, ask to migrate it ([r
 | `comfy-ui-images` | skill | Generating images (and cutting characters out) from workflow templates: bundled `z-image-turbo` (default, built-in nodes only) and `z-image-turbo-res4lyf`, or the project's own; adds LoRAs on request; "save this" makes a take into a project template, linked from the 2D style doc |
 | `comfy-ui-sound-effects` | skill | Generating sound effects from workflow templates: bundled `stable-audio-3-sfx` (Stable Audio 3 + an LLM prompt enhancer), or the project's own |
 | `chatterbox-text-to-speech` | skill | Local voice lines with Chatterbox: emotional styles, cloned character voices, batches; `init chatterbox` installs it with uv into the project's Chatterbox folder (locked Python 3.11 in `settings/`, git-ignored `voices/`) |
-| `generate-voice-lines` | skill | A character's voice and lines: designs the voice with Kokoro (one calm 6-8 s reference clip, master in `assets/audio/voice/<name>/`), generates lines by kind (speech, battle) with Chatterbox from it, 5 takes each, Whisper word check and cutting; `init kokoro` installs Kokoro + Whisper into the project's Kokoro folder |
+| `generate-voice-lines` | skill | A character's voice and lines: designs the voice with Kokoro (one calm 6-8 s reference clip, master in `assets/audio/voice/<name>/`), generates lines by kind (speech, battle, laugh) with Chatterbox from it, 5 takes each, Whisper word check and cutting; `init kokoro` installs Kokoro + Whisper into the project's Kokoro folder, locally or with Kokoro in Docker (for machines where Smart App Control or a policy blocks Python packages) |
 | `godot-resource-manager` | agent | Syncs assets into Godot and updates the docs from the Godot project |
 
 ## ComfyUI images and sounds
@@ -87,7 +87,8 @@ Spoken lines are made in two steps, because no single local tool does both (`gen
    recipe; Chatterbox uses a git-ignored copy.
 2. **Chatterbox acts the lines.** Every line is cloned from that one clip with the English model; the
    kind of line (speech: greetings, dialogue; battle: spells, battle cries) only changes the
-   settings. 5 takes per line, a Whisper word check, and the user picks.
+   settings. Laughs use the Turbo model and its `[laugh]` tag instead. 5 takes per line, a Whisper
+   word check, and the user picks.
 
 One calm reference with the intensity added once, in the settings, gave by far the best results in
 testing. The tests and lessons behind it are in [voice_gen_context.md](voice_gen_context.md).
@@ -98,7 +99,7 @@ testing. The tests and lessons behind it are in [voice_gen_context.md](voice_gen
 - Godot 4 (GDScript only)
 - Python 3.11+ with Pillow, and `ffmpeg`, to run the export and sync scripts
 - ComfyUI and `comfy-cli` (installed with `uv tool install comfy-cli`), only for the ComfyUI skills; the `comfy-ui-connection` skill offers to install both, or uses an existing ComfyUI. The default templates need these models: images `z_image_turbo_bf16.safetensors`, `qwen_3_4b.safetensors`, `ae.safetensors` (ComfyUI's Z-Image Turbo template downloads them); sounds `stable_audio_3_medium_base.safetensors`, `t5gemma_b_b_ul2.safetensors`, `qwen3.5_2b_bf16.safetensors`. Cut-outs need Impact Pack + Subpack with the YOLO person and SAM models
-- `uv` and `git`, only for `chatterbox-text-to-speech` and `generate-voice-lines` (an NVIDIA GPU is recommended; Kokoro and the Whisper check also run on CPU). First use downloads the models (Chatterbox several GB, Kokoro ~330 MB, Whisper ~460 MB) into the shared Hugging Face cache
+- `uv` and `git`, only for `chatterbox-text-to-speech` and `generate-voice-lines` (an NVIDIA GPU is recommended; Kokoro and the Whisper check also run on CPU). First use downloads the models (Chatterbox several GB, Kokoro ~330 MB, Whisper ~460 MB) into the shared Hugging Face cache. Docker is optional, only when Kokoro runs in a container (~7.8 GB image)
 - Docker and `uv`, only for `blender-3d-modeling`
 
 ## Changing the template

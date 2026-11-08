@@ -1,7 +1,7 @@
 # Line modes: the kind of line decides the delivery
 
 Every line is generated with Chatterbox's **English model** from the character's one calm Kokoro
-reference clip. The mode only changes the settings and how the text is written. The intensity is
+reference clip (one exception: **laughs**, which use the Turbo model, see "Laughs"). The mode only changes the settings and how the text is written. The intensity is
 added **once**, here, never in the reference.
 
 ## Modes
@@ -10,6 +10,7 @@ added **once**, here, never in the reference.
 |---|---|---|---|---|
 | **speech** | greeting, farewell, dialogue, shop, idle chatter, blessing, lore told by the character | 0.5 (0.45 formal / prayer-like, 0.65 friendly / welcoming) | 0.4 (0.35 slower, more solemn) | tested: very good |
 | **battle** | spell call, battle cry, command in combat, rallying shout | 1.1 | 0.3 | tested: good, 1-2 good takes in 5 |
+| **laugh** | a laugh on its own (happy, hearty, chuckle) | - (**Turbo model**: it ignores exaggeration and cfg) | - | tested once: good, 1 good take in 5, cut to one laugh |
 
 `temperature` stays at the default; lower it to 0.6-0.7 only if takes keep sounding odd or synthetic.
 
@@ -57,6 +58,28 @@ Lines of about 5 words or fewer give the model little context, so it guesses the
 In the first test the best take was a short one, and the cut ones were not judged yet. Record in the
 Chatterbox `AGENTS.md` Findings which of the two the user picks; once a project shows a clear winner,
 generate only that.
+
+## Laughs
+
+A laugh is a sound, not words, so the English model cannot act it: "Ha ha ha!" at exaggeration 0.9 /
+cfg 0.3 gave only short, thin 0.5-1.1 s "ha-ha"s. The **Turbo** model has a `[laugh]` sound tag and
+gives full laughs (1.5-1.8 s), still cloned from the same calm reference.
+
+- **Text:** the laugh written out, then the tag: `"Ha ha ha! [laugh]"` (a tag alone may come back
+  short or odd). The kind of laugh (deep, hearty, a chuckle) cannot be set: Turbo has no intensity
+  dial, so make 5 takes and let the user pick the one that fits. `[chuckle]` exists for a softer one
+  (not tested yet).
+- **Batch entry:** `"model": "turbo"`, no `exaggeration` / `cfg_weight` (ignored), `"takes": 5`.
+- **Checking:** the Whisper word check is **not useful** for laughs: "hahaha" written as one word,
+  or "heh heh heh", is flagged WORDS / FAIL but can be a good laugh. Report length and pitch only:
+  pitch 0 Hz means an unvoiced, breathy laugh (normal); over ~1.7x the reference is a squeak (in the
+  test one take reached 5.5x): list it as probably bad. A longer, lower take is more likely "deep and
+  hearty" (the chosen take was the longest and the lowest, 0.84x).
+- **Two laughs in one take:** a take can hold two laughs with a short silence between them. If the
+  user wants only one, cut it with `cut_take.py`: run it on the take to print its loudness every
+  20 ms, pick a time inside the silence, then `cut_take.py <take> --start 0 --end <time>` writes
+  `<take>_cut.wav` with a short fade. **Cut only when the user asks.** Record the cut (take, start,
+  end) in the master's `.md`.
 
 ## Takes and lengths
 
