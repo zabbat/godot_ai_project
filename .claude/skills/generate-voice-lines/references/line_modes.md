@@ -10,7 +10,7 @@ added **once**, here, never in the reference.
 |---|---|---|---|---|
 | **speech** | greeting, farewell, dialogue, shop, idle chatter, blessing, lore told by the character | 0.5 (0.45 formal / prayer-like, 0.65 friendly / welcoming) | 0.4 (0.35 slower, more solemn) | tested: very good |
 | **battle** | spell call, battle cry, command in combat, rallying shout | 1.1 | 0.3 | tested: good, 1-2 good takes in 5 |
-| **laugh** | a laugh on its own (happy, hearty, chuckle) | - (**Turbo model**: it ignores exaggeration and cfg) | - | tested once: good, 1 good take in 5, cut to one laugh |
+| **laugh** | a laugh (happy, hearty, giggle) | - (**Turbo model**: it ignores exaggeration and cfg) | - | tested twice: deep laugh alone 1 good in 5; a giggle only worked inside a sentence, cut out |
 
 `temperature` stays at the default; lower it to 0.6-0.7 only if takes keep sounding odd or synthetic.
 
@@ -66,9 +66,17 @@ cfg 0.3 gave only short, thin 0.5-1.1 s "ha-ha"s. The **Turbo** model has a `[la
 gives full laughs (1.5-1.8 s), still cloned from the same calm reference.
 
 - **Text:** the laugh written out, then the tag: `"Ha ha ha! [laugh]"` (a tag alone may come back
-  short or odd). The kind of laugh (deep, hearty, a chuckle) cannot be set: Turbo has no intensity
+  short or odd). This worked for a deep, hearty man's laugh.
+- **Light or high laughs (a giggle, a young woman's laugh): put the laugh inside a sentence** that
+  gives it a reason, ending with the tag, e.g. `"Don't be silly! [laugh]"`, then cut the words away
+  with `cut_take.py --start <time in the pause after the last word>`. A giggle on its own (20 Turbo
+  takes, with `[laugh]` and `[chuckle]`, with and without written "hehe") came out shrill or odd
+  every time; the sentence version gave a usable giggle in 1 of 5. Find the end of the words with
+  the loudness print (Whisper does not transcribe the laugh, so it hears only the words).
+- **Do not write the laugh for the English model** ("..., hehehe!" or "..., haha!"): it reads the
+  letters out instead of laughing. The kind of laugh (deep, hearty, a chuckle) cannot be set: Turbo has no intensity
   dial, so make 5 takes and let the user pick the one that fits. `[chuckle]` exists for a softer one
-  (not tested yet).
+  (tried once for a giggle, on its own: not better than `[laugh]`).
 - **Batch entry:** `"model": "turbo"`, no `exaggeration` / `cfg_weight` (ignored), `"takes": 5`.
 - **Checking:** the Whisper word check is **not useful** for laughs: "hahaha" written as one word,
   or "heh heh heh", is flagged WORDS / FAIL but can be a good laugh. Report length and pitch only:

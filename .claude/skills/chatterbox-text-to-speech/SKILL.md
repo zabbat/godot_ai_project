@@ -20,6 +20,8 @@ Bundled with this skill:
   `settings/config.toml` (defaults), `settings/styles.toml` (emotion/delivery presets),
   `voices/.gitkeep`, `.gitignore`, `AGENTS.md`.
 - `assets/scripts/speak.py` — the generator (CLI, batch mode). Run it with `uv run`; never with a system Python.
+- `assets/docker/` — `Dockerfile` + `compose.yaml` for running Chatterbox (and the voice-check
+  scripts) in a GPU Docker container when the local Python is blocked ("Chatterbox in Docker").
 - `references/game_voice_styles.md` — **read before writing lines or choosing a style**: tags,
   exaggeration/cfg tables, how to type text that performs, line types for games, reference-clip
   rules, troubleshooting a bad take.
@@ -137,6 +139,38 @@ projects. Tell the user it is a one-time wait. Later runs skip the download, and
 seconds to generate on a GPU (about 1000 sampling steps at ~70 it/s on an RTX 5070). Then play the result (see "Show the result").
 
 Report what was installed (Python, torch, GPU, model) and that `voices/` is git-ignored.
+
+## Chatterbox in Docker
+
+For when the local Python is blocked: Windows **Smart App Control**, antivirus or a company policy
+refusing a Python DLL (`ImportError: DLL load failed ...: An Application Control policy has blocked
+this file`, often `_ctypes`, which `soundfile` needs). The block can start on a machine where
+everything worked the day before. Smart App Control has no per-app allowlist. **Never work around
+the block** (renaming, re-signing, a different Python until one loads); offer Docker, or turning the
+feature off (the user's decision for the whole machine).
+
+The container is Linux, so the policy does not apply; it runs on the GPU (Docker Desktop with the
+NVIDIA runtime: `docker run --rm --gpus all ubuntu:24.04 nvidia-smi -L` must list the GPU).
+
+1. **Copy** `assets/docker/Dockerfile` and `assets/docker/compose.yaml` to `<cbx>/docker/` (never
+   overwrite) and replace `<cbx>` (and `<kok>`, the generate-voice-lines Kokoro folder) with the real
+   folders. The image holds **both** locked environments, built from the committed `uv.lock` files:
+   Chatterbox (`cbx-python`) and the Kokoro/Whisper one (`kok-python`), sharing one torch. No Kokoro
+   folder in the project: delete the `<kok>` COPY line and its `uv sync`. Write "Chatterbox runs:
+   Docker" in `<cbx>/AGENTS.md` and add the `docker/` folder to its tree.
+2. **Build** once: `docker compose -f <cbx>/docker/compose.yaml build` (~10 min, ~10 GB image: run it
+   in the background and tell the user). After a change to a `uv.lock`, build again.
+3. **Run** any script from the project root, with project-relative paths (the project is mounted at
+   `/work`, so outputs land in `<cbx>/output/` as usual):
+
+   ```
+   docker compose -f <cbx>/docker/compose.yaml run --rm voice cbx-python .claude/skills/chatterbox-text-to-speech/assets/scripts/speak.py --batch <cbx>/lines.json --out <cbx>/output/NAME
+   ```
+
+   Model weights download into the Docker volume `hf-cache` on the first run (not the Windows HF
+   cache) and stay there. Each run loads the model again (seconds): put lines in one batch.
+4. Everything else (options, batches, `.json` per take, choosing takes) is unchanged. Opening a
+   take for the user (`code -r`) still happens on Windows.
 
 ## Generating speech
 
@@ -310,5 +344,6 @@ delivery recurs ("old-wizard", "radio-operator"); do not edit presets the user d
 - **Turbo ignores** `exaggeration` and `cfg_weight`; passing them logs a warning. Use a tag, wording, voice, temperature.
 - **Markers only exist on Turbo/Nano.** When English/Multilingual is chosen explicitly (`--model english`) and the text has `[markers]`, the script strips them (with a note) instead of speaking them. Auto routing never gets there: markers mean Turbo or a conflict.
 - **Long text drifts**: split above ~40 words, one line per sentence.
-- **Run with the project's environment only** (`uv run --project <cbx>/settings`). Do not `pip install` into any other Python, and do not edit `uv.lock` by hand.
+- **Permission error on import** (`DLL load failed ... Application Control policy`): see "Chatterbox in Docker".
+- **Run with the project's environment only** (`uv run --project <cbx>/settings`, or `cbx-python` in the Docker image). Do not `pip install` into any other Python, and do not edit `uv.lock` by hand.
 - After changing dependencies or the backend, run `uv lock` then `uv sync` in the same way and commit the new `uv.lock`.

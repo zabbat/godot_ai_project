@@ -122,7 +122,7 @@ Port 8880 taken: change the left side of the `ports` line (e.g. `127.0.0.1:8881:
 ### Permission errors
 
 If a Kokoro, Whisper or Chatterbox command fails with a permission error, **suggest running Kokoro
-in Docker**. Signs:
+in Docker** (and, if more than Kokoro is blocked, the other voice tools too: see below). Signs:
 - `ImportError: DLL load failed ...: An Application Control policy has blocked this file.`
 - "Access is denied" / `PermissionError` while importing a package (not while writing a file);
 - the user sees a Windows notification that something Python-related was blocked.
@@ -139,8 +139,22 @@ resetting Windows. So offer the user:
 **Never work around the block** (renaming, re-signing, swapping package versions until one loads,
 editing policy). Test what still loads before deciding: in one case only Kokoro's text front-end
 (`srsly`, under spaCy) was blocked, while Whisper, librosa and Chatterbox kept working, so Docker was
-needed for Kokoro alone. If Chatterbox or Whisper are blocked too, say so: Docker covers Kokoro only;
-without the Whisper check, the user judges every take by ear.
+needed for Kokoro alone. A day later the same machine blocked `_ctypes` in the uv-managed Python
+itself, which stops `soundfile` and so **every** local script (Chatterbox, Whisper, even the
+`kokoro_docker.py` client).
+
+**Everything blocked: run the voice tools in Docker too.** The Chatterbox skill's "Chatterbox in
+Docker" builds one GPU image with both locked environments (`<cbx>/docker/`). Then every command of
+this skill runs through it, from the project root, with the same arguments:
+
+```
+docker compose -f <cbx>/docker/compose.yaml run --rm voice kok-python .claude/skills/generate-voice-lines/assets/scripts/<script>.py ...   # kokoro_docker.py, check_takes.py, cut_take.py
+docker compose -f <cbx>/docker/compose.yaml run --rm voice cbx-python .claude/skills/chatterbox-text-to-speech/assets/scripts/speak.py ...
+```
+
+The Kokoro speech server still runs in its own container (`<kok>/docker/compose.yaml up -d`); the
+image reaches it at `host.docker.internal:8880` (`KOKORO_URL` is set in the compose file). Write
+"Voice scripts run: Docker" in `<kok>/AGENTS.md` so later sessions use these commands.
 
 ## 1. The character
 

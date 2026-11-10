@@ -1,0 +1,27 @@
+# Voice tools in Docker (chatterbox-text-to-speech skill, "Chatterbox in Docker").
+# Chatterbox, the Whisper take check and the Kokoro client scripts, on the GPU, in Linux.
+#   build (once, ~10 min):  docker compose -f <cbx>/docker/compose.yaml build
+#   run a script:           docker compose -f <cbx>/docker/compose.yaml run --rm voice cbx-python <script> ...
+#                           (kok-python for the generate-voice-lines scripts)
+# Paths in the commands are relative to the project root (mounted at /work).
+# Model weights go to the named volume hf-cache (downloaded on first use, kept between runs).
+# The Kokoro speech server (<kok>/docker/compose.yaml) is reached at host.docker.internal.
+name: voice-tools
+services:
+  voice:
+    build:
+      context: ../../..
+      dockerfile: <cbx>/docker/Dockerfile
+    image: voice-tools:1
+    gpus: all
+    working_dir: /work
+    volumes:
+      - ../../..:/work
+      - hf-cache:/root/.cache/huggingface
+    environment:
+      KOKORO_URL: http://host.docker.internal:8880
+      PYTHONUNBUFFERED: "1"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+volumes:
+  hf-cache:
