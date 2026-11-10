@@ -152,6 +152,22 @@ feature off (the user's decision for the whole machine).
 The container is Linux, so the policy does not apply; it runs on the GPU (Docker Desktop with the
 NVIDIA runtime: `docker run --rm --gpus all ubuntu:24.04 nvidia-smi -L` must list the GPU).
 
+**Reuse an existing Docker first.** Before copying or building anything, look for an image the user
+already has (any project, any tag): `docker images --format '{{.Repository}}:{{.Tag}} {{.Size}}'`.
+Probe candidates (`voice-tools`, `chatterbox`...): `docker run --rm <image> cbx-python -c "import chatterbox"`
+(the wrapper from this skill's image) or, for another image, `python -c "import chatterbox"`. If one works
+(several: let the user pick), skip the copy and build below and run `speak.py` in it with the project at
+`/work` and the weights cache mounted (the old image's volume, e.g. `voice-tools_hf-cache` at
+`/root/.cache/huggingface`; `docker volume ls`, `docker image inspect -f '{{.Config.Env}}' <image>`):
+
+```
+docker run --rm --gpus all -v "<project, Windows path>:/work" -v voice-tools_hf-cache:/root/.cache/huggingface -e PYTHONUNBUFFERED=1 -w /work <image> cbx-python .claude/skills/chatterbox-text-to-speech/assets/scripts/speak.py ...
+```
+
+(Git Bash on Windows: `export MSYS_NO_PATHCONV=1`, project path as `$(pwd -W)`.) This worked with the
+`voice-tools:1` image. Write "Chatterbox runs: existing Docker image `<image>`" and the run prefix into
+`<cbx>/AGENTS.md`. Only when nothing usable exists, **ask** before building a new image (steps below).
+
 1. **Copy** `assets/docker/Dockerfile` and `assets/docker/compose.yaml` to `<cbx>/docker/` (never
    overwrite) and replace `<cbx>` (and `<kok>`, the generate-voice-lines Kokoro folder) with the real
    folders. The image holds **both** locked environments, built from the committed `uv.lock` files:

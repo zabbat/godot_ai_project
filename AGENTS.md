@@ -15,3 +15,5 @@ their own `AGENTS.md` from `.claude/skills/godot-ai-architecture/assets/repo_tem
 | ComfyUI image templates | `tools/comfy-ui/templates/images/` |
 | ComfyUI sound effects output | `tools/comfy-ui/output/sound-effects/` |
 | ComfyUI sound templates | `tools/comfy-ui/templates/sound-effects/` |
+| Chatterbox | `tools/chatterbox/` |
+| Qwen3-TTS | `tools/qwen3-tts/` |

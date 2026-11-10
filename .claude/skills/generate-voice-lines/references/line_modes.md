@@ -1,5 +1,8 @@
 # Line modes: the kind of line decides the delivery
 
+> Chatterbox only: used for the **Kokoro route** and for **tone references** (a specific emotion that
+> did not come through in Qwen). The default Qwen route has no modes; see qwen_voices.md.
+
 Every line is generated with Chatterbox's **English model** from the character's one calm Kokoro
 reference clip (one exception: **laughs**, which use the Turbo model, see "Laughs"). The mode only changes the settings and how the text is written. The intensity is
 added **once**, here, never in the reference.

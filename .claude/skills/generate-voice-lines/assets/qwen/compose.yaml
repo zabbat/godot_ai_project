@@ -1,0 +1,17 @@
+# Qwen3-TTS in Docker (generate-voice-lines skill). Copied to <qwen>/docker/ with the Dockerfile by "init qwen".
+#   build (once, ~10 min):  docker compose -f <qwen>/docker/compose.yaml build
+#   run a script:           docker compose -f <qwen>/docker/compose.yaml run --rm qwen python .claude/skills/generate-voice-lines/assets/scripts/qwen_voice.py ...
+# The project is mounted at /work, so paths in the commands are project-relative.
+# Weights go to the named volume qwen-hf-cache and stay between runs.
+name: qwen3-tts
+services:
+  qwen:
+    build: .
+    image: qwen3-tts:1
+    gpus: all
+    working_dir: /work
+    volumes:
+      - ../../..:/work
+      - qwen-hf-cache:/hf-cache
+volumes:
+  qwen-hf-cache:
