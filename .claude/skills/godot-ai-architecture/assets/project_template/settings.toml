@@ -18,3 +18,8 @@ not_exported = ["icon.svg"]
 # Files in assets/ that need no map entry: records, and references that are not in the game
 # (a character's voice reference clip, cloned by Chatterbox; generate-voice-lines skill).
 asset_records = ["*.md", "*.json", "License.txt", ".gitkeep", "*_voice_reference.wav"]
+
+# Optional: hand-edited tuning values (TOML) and the GDScript file export_tuning.py generates
+# from it (relative to the Godot project). See the skill's "Tuning values" section.
+# tuning = "prototype/tuning.toml"
+# tuning_target = "common/tuning/tuning_values.gd"

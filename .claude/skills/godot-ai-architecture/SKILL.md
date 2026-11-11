@@ -33,7 +33,7 @@ This skill is generic: the project's own paths are in the repository's root `AGE
   assets/            source resources (images, models, sounds) + where each came from.
                      Only resources and records: no usage, no code.
   tools/             one folder per tool (see "Tools")
-    godot-sync/      export_assets.py, check_sync.py (generic, copies of this skill's scripts)
+    godot-sync/      export_assets.py, export_tuning.py, check_sync.py (generic, copies of this skill's scripts)
     <tool>/          a tool's settings, scripts, working files, output/ (git-ignored)
   godot/<project>/   the Godot project: code, scenes, data, and files exported from assets/
   export/            built game exports (APK...), written by Godot (git-ignored)
@@ -62,7 +62,7 @@ Every tool the project uses (a generator like ComfyUI or Chatterbox, an editor l
 ```
 tools/
   AGENTS.md          index: one line per tool
-  godot-sync/        generic scripts: export_assets.py, check_sync.py
+  godot-sync/        generic scripts: export_assets.py, export_tuning.py, check_sync.py
   comfy-ui/
     ComfyUI/                                   only if ComfyUI was installed for this project (comfy-ui-connection skill; git-ignored);
                                                usually an existing install outside the repo is used ("ComfyUI install" row)
@@ -178,9 +178,20 @@ The generic scripts live in this skill's [assets/](assets/README.md) folder and 
 | Script | Does |
 |---|---|
 | `export_assets.py` | Exports `assets/` into Godot following the asset map: `copy`, `image` (resize to a profile size, e.g. 720 masters → 480 portraits), `ffmpeg` (trim, normalize, convert audio), and writes import settings. |
-| `check_sync.py` | Reports, one short line per problem: targets not exported (and whether the master or the Godot copy is newer, by file time), takes in the tools' output folders newer than the take a master was chosen from (its `.md` names the take; `Rejected: ...` silences reviewed ones), Godot media no entry produces, masters no entry uses, Godot folders missing from `godot_structure.md`, `AGENTS.md` indexes missing files or with broken links, Godot data and code changed after the game data / structure docs. |
+| `export_tuning.py` | Turns `prototype/tuning.toml` (values the user tweaks by hand) into one generated GDScript file in Godot; `--check` reports it out of date. See "Tuning values". |
+| `check_sync.py` | Reports, one short line per problem: targets not exported (and whether the master or the Godot copy is newer, by file time), takes in the tools' output folders newer than the take a master was chosen from (its `.md` names the take; `Rejected: ...` silences reviewed ones), Godot media no entry produces, masters no entry uses, Godot folders missing from `godot_structure.md`, `AGENTS.md` indexes missing files or with broken links, Godot data and code changed after the game data / structure docs, the tuning file out of date. |
 
 When a recurring job would cost many reads (checking dozens of files against a doc, converting a batch), add it to a script instead of doing it by hand each time. Write it generic (paths from `settings.toml`) so it can join this skill's `assets/`. Changing the skill's scripts is a skill change: ask the user first.
+
+## Tuning values
+
+Numbers the user wants to tweak by hand (an opacity, a light strength, a music volume) live in **one TOML file on the AI side**, `prototype/tuning.toml` (`[section]` / `name = value`, a comment per value, set in `settings.toml` as `tuning` and `tuning_target`), plus `prototype/tuning.md` saying what each does. The user never edits them in Godot.
+
+- `tools/godot-sync/export_tuning.py` writes the toml into a generated GDScript file (`const VALUES` keyed `"section.name"`) in Godot. A `.gd`, not a `.cfg`: scripts are always packed into an export, other files need an export filter. `check_sync.py` reports the generated file out of date.
+- A small hand-written static class (`Tuning.number("section.name")`) reads it, with **no default in code** (the toml is the only place a value lives; a missing key is an error). Scenes read their values in `_ready`; a value that is also a dev option just gives the starting value.
+- Add a value: a line in the toml, a row in `tuning.md`, run the script, and read it where the number used to be hard-coded (remove the old literal). A `.tres` that needs one stores the key (a string), not the number.
+- Values are compile-time: change, run the script, rerun or re-export the game.
+- Keep to the numbers the user asks to tweak; gameplay data (stats, costs, damage) stays in `game_data.md` and `.tres`.
 
 ## Checklist when adding something new
 

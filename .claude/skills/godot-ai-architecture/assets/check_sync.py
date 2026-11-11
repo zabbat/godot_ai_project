@@ -41,7 +41,7 @@ MEDIA = {".png", ".jpg", ".jpeg", ".webp", ".svg", ".wav", ".ogg", ".mp3", ".ttf
 DATA_AND_CODE = {".tres", ".tscn", ".gd", ".gdshader", ".godot"}
 SKIP_DIRS = {".godot", ".git", ".import", "android", "__pycache__"}
 LINK = re.compile(r"\]\(([^)#\s]+)(?:#[^)]*)?\)")
-SECTIONS = ["export", "outputs", "unmapped", "unused", "structure", "index", "changed"]
+SECTIONS = ["export", "outputs", "unmapped", "unused", "structure", "index", "changed", "tuning"]
 TAKE_LINE = re.compile(r"^(?:Image|Audio): (\S+)", re.MULTILINE)
 
 
@@ -251,6 +251,16 @@ def _commit_time(repo: Path, path: str) -> int:
 
 def _git(repo: Path, *args: str) -> str:
 	return subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True).stdout
+
+
+def check_tuning(ctx) -> list[str]:
+	if "tuning" not in ctx.settings:
+		return []
+	import export_tuning
+	target, text = export_tuning.render(ctx.repo, ctx.settings)
+	if not target.exists() or target.read_text(encoding="utf-8") != text:
+		return [f"{target.relative_to(ctx.repo).as_posix()} is out of date: run tools/godot-sync/export_tuning.py"]
+	return []
 
 
 if __name__ == "__main__":

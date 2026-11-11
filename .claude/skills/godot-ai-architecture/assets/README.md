@@ -7,6 +7,7 @@ between projects), then copied to each project.
 | Path | Copy to | Purpose |
 |---|---|---|
 | `export_assets.py` | `tools/godot-sync/export_assets.py` | Exports `assets/` into the Godot project following `prototype/asset_map/` (copy, image resize, ffmpeg; import settings). |
+| `export_tuning.py` | `tools/godot-sync/export_tuning.py` | Optional: turns `prototype/tuning.toml` into a generated GDScript file (`--check`: is it up to date). |
 | `check_sync.py` | `tools/godot-sync/check_sync.py` (needs `export_assets.py` beside it) | Reports where Godot and the AI side disagree (export with newer-side note, tool-output takes newer than a master's, unmapped, unused, structure, index, changed). |
 | `project_template/settings.toml` | `prototype/asset_map/settings.toml` | Repo paths and options for both scripts; set `godot_project` and `outputs`. |
 | `project_template/profiles.toml` | `prototype/asset_map/profiles.toml` | Starter conversion profiles; fill in each `spec` doc and adjust sizes. |

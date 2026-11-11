@@ -194,6 +194,53 @@ folder (or named `-small`) so they never end up as masters.
 7. Cut out with `colorkey_cutout.py` and the original's settings (in its record), not the
    original's alpha; check the edge over red.
 
+## 3c. A big expression that moves the head (laugh, head tilted back): swap the head
+
+A face patch (section 3) only repaints the features inside the outline. A laugh with the head
+tipped back changes the jaw, neck, ears, hair and tiara, so patch boxes give an odd face (Freia,
+see Lessons). Generate the expression as its own picture, then **put that head on the neutral's
+body**. Everything below the neck stays the neutral's exactly (dress, ornament, necklace, hands).
+Worked example: Freia's happy figure (`tools/comfy-ui/scripts/freia_happy/`).
+
+1. **Generate the head by prompt, with the neutral's own seed.** Start from the neutral's
+   `.api.json` (`comfy-ui-images`), keep its **seed** and change only the expression words in the
+   prompt (replace the smile phrase; drop "looking into the camera" when the eyes must be closed).
+   The same seed keeps the pose, framing and gown close to the neutral; random seeds drifted
+   (one hand off the hip, shorter hair, other jewellery). Make 2 takes and pick. Even the same seed
+   changed the sleeves and necklace in one take, so expect to take only the head and neck from it.
+2. **Put both in the same frame.** The neutral's source is a crop of its raw take (Freia: crop
+   160 140 1120 1100, scaled to 1280). Apply the **same crop and scale** to the new take, so heads
+   have the same size and position. Skip this and the head scale is off by a third.
+3. **Cut across the neck.** Paste everything above a horizontal line (feather 6 px) from the new
+   take over the neutral. The line must be **below the neutral's old chin** (else a sliver of the old
+   jaw shows under the new chin) and above the new take's necklace. Everything above it, including
+   background, hair and tiara, comes from the new head, so the old head is fully replaced.
+4. **Scale and shift to meet the neck.** Scale about the nose (about 1.0-1.1; compare ear-to-ear
+   width) and shift down so the neck meets the collar (a tilted-back head has a longer neck, which
+   looks right). **Measure the sideways offset, do not eyeball it**: zoom 6x on the cut with a 10 px
+   grid and read the neck's left and right edge just above and just below the cut. Freia: head neck
+   590-707, body neck 574-690, same width (scale right), so shift 16 px. A sliding test (shift the
+   head sideways, minimise the colour difference of a band above the cut against a band below it)
+   agreed. Skin-colour detection of the neck failed: the shading is too varied.
+5. **Fill what the shift leaves empty.** Shifting the head down leaves a strip at the top with no
+   head pixels (it came out black): start the paste where the head layer has pixels.
+6. **Repair the seams by hand, not with Flux** (nothing gets invented): the hair that crosses the
+   cut is cut off, and the two hairstyles differ, so look at both shoulders at 3x and 8x.
+   - A strand of the neutral's hair left sticking out, and the gap beside it: paint the **background
+     colour** (median of nearby background, noise of the same size) over the polygon.
+   - A hole of background between strands, and the greenish tint along the feathered cut: paint
+     **hair colour** (a vertical gradient between a sample above and one below), but only on
+     pixels that are green-ish (`g - r` above a threshold) inside a polygon, so the dark strand
+     outlines stay. Do the tint as a second pass with a looser threshold, then look again.
+   - Check **both** sides: the mirror seam (here the tip of the right strand) has the same tint.
+7. **Cut it out again.** The outline changed, so run `colorkey_cutout.py` with the neutral's
+   settings on the result (not the neutral's alpha). Check over red: gaps inside a tiara's filigree
+   may stay as dark teal pieces; make green-dominant pixels in the tiara box transparent. Keep the
+   other dark panels (they are its enamel).
+8. **Record it**: the `.md` names both takes, the crop, scale, shifts, cut line and every painted
+   fix, and the scripts go to `tools/<tool>/scripts/<name>/` (the working files stay in the output
+   folder). This figure is not a pixel-identical swap-in; say so in the record and the docs.
+
 ## 3b. Other ways to edit (from online research, not yet tried in this project)
 
 Use these when the face-patch recipe above does not fit. Test on a copy and keep the ones that
@@ -321,6 +368,44 @@ From Queen Charlotte (tower repo, takes 053-059 in `tools/comfy-ui/output/images
   Until the script is fixed, delete the old exported file before exporting a changed face, and
   compare the export with the master (resize the master, compare RGB).
 
+From Princess Freia (tower repo, asset 063 in `tools/comfy-ui/output/images/063-asset-freia-neutral/`):
+
+- **Cheek boxes that reach the lower lids recolour the eyes.** A stronger-blush pass with boxes
+  starting at y=382 turned her light brown eyes red and changed an earring (E takes). Starting at
+  y=402 (below the lids) and ending above the earrings (y=446) was clean, 0 px outside the boxes
+  (F takes). When widening a blush, grow it sideways and down, not up.
+- **Brow boxes too short leave a ghost brow.** The first brow boxes (326-356) left the old brow's
+  top above them, giving a double brow. Taller boxes (308-358) fixed it. Measure where the old
+  brow really is on a zoomed grid.
+- **A smile can vanish when the mouth is in the mask.** Round 1 lost her smile in all six takes;
+  the prompt must name the mouth shape ("pink glossy lips curved in a small bashful smile with the
+  corners up"). Also: one prompt with the mouth worded as a nervous "o" gave a flat mouth in two of
+  three seeds. Run 3 seeds per wording and pick.
+- **Draw the boxes first and check them, always.** A laugh edit with eyes (345-420) and a mouth
+  box proposed from memory "looked off" to the user; one big pass over eyes and mouth together is
+  where results get odd. Draw them on the grid (`draw_boxes.py`) and show them before running.
+- **A big expression with a head tilt is not a face patch.** The laugh needs a tilted head, a
+  different jaw and neck; box edits cannot do that (see 3c). Offer the head swap or a regeneration
+  with the same seed instead of grinding on boxes.
+- **Regeneration by prompt: the seed is the lever.** Random seeds gave different hair, tiara,
+  jewellery and a one-handed pose; the neutral's seed with only the expression changed kept the
+  pose and framing (still changed the sleeves and necklace once). Keep take 52's `.api.json`.
+- **The ornament and jewellery are the tell.** Compare the new take against the neutral on the gold
+  pattern, necklace colour, sleeves and gems before deciding: they decided that the body must come
+  from the neutral.
+- **Hand-painting seams beats inpainting them**, again (see Charlotte 057). Mask by colour so the
+  outlines stay, then look at 8x; the first pass left a green tint that the second pass removed.
+- **Cut-out of a swapped figure**: use the neutral's `colorkey_cutout.py` settings, not its alpha
+  (the outline moved). Zoom on the tiara and on hair gaps over red.
+- **Working notes**: the user reads the picture, not the numbers. Always put the candidates next to
+  each other (neutral | take | take, saved as one image, linked as a file, never an opened folder),
+  and when the user asks a question ("could we...?") answer without changing anything.
+- **Windows/uv trap**: `uv run python` takes Windows paths; in Git Bash `/c/...` paths and
+  backslashes inside python strings break it (`'\a'` became a bell). Build paths with `os.path.join`
+  and pass them as arguments.
+- **A face edit is not skipped on export when the file is new**: `export_assets.py` wrote the new
+  `freia_embarrassed.png` and `freia_happy.png` at once (the skip only hits changed existing files).
+
 **Worked examples** (Charlotte, 1280x1280 source):
 
 | Edit | Passes (boxes; crop 320 160 960 640 unless noted) | Result |
@@ -330,6 +415,8 @@ From Queen Charlotte (tower repo, takes 053-059 in `tools/comfy-ui/output/images
 | Hand over mouth (055-14) | crop 128 256 1152 1280: arm 270 600 500 1140 + hand path 430 420 760 860 (too big); then crop 0 256 1024 1280: old forearm 160 790 488 1280 | pose good; necklace and hair changed: redo with narrow boxes |
 | Hand on chest, shocked (057, **480x480 test**, crop 0 0 480 480, feather 4) | hand 186 258 262 318 + forearm 140 296 204 362 + elbow 100 300 156 392 (seed 4); old forearm 84 364 150 480 (seed 3, left a strip); painted green polygon (132,388) (178,343) (166,398) (140,404) (128,398); skirt box 112 392 172 432 (seed 2); painted spike (126,387) (139,386) (137,397) (126,397) | good; x2.667 for 1280 |
 | Elbow ornaments removed (058, 1280, feather 6) | left: crop 0 640 640 1280, box 272 1012 348 1128 (seed 4); right: crop 640 640 1280 1280, box 936 1014 1008 1146 (seed 1) | good; 1.4 % changed |
+| Freia embarrassed (063, 1280, crop 240 200 880 680) | pass 1 (seed 2, feather 6): brows 520 308 625 358 + 665 304 772 356, cheeks 515 395 625 440 + 665 395 775 440, mouth 598 474 708 526; pass 2 on that take (seed 2, feather 8): cheeks only 515 402 632 446 + 660 402 780 446 | good; 2.4 % changed; the first 6 takes (brows 326-356, mouth missing) ghosted the brow and lost the smile |
+| Freia happy / laughing (063-53 head on 063-52 body) | see 3c: same seed, laugh in the prompt; crop 160 140 1120 1100; scale 1.06 about (620, 300), +12 px sideways, +50 px down, cut y=570 feather 6; hand-painted seam fixes; `colorkey_cutout.py --tol 45 --soft 12 --holes 150`, tiara gaps made transparent | good; own outline and cut-out; scripts in `tools/comfy-ui/scripts/freia_happy/` |
 
 ## Gotchas
 - Python is not on PATH here: use ComfyUI's embedded `python.exe` with `-I`.
@@ -337,3 +424,6 @@ From Queen Charlotte (tower repo, takes 053-059 in `tools/comfy-ui/output/images
 - Never change the canvas size or crop of the master: the shared alpha only fits an identical
   canvas.
 - Flux Fill follows the prompt, not the picture's style, unless you repeat the style words.
+- Which route for which edit: eyes/brows/mouth/cheeks inside the outline = face patch (section 3);
+  a limb = pose (3a); a head that moves or tilts = regenerate with the neutral's seed and swap the
+  head (3c). If the user wants a big expression, say which route you will take before running.
