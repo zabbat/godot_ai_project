@@ -92,4 +92,4 @@ Each material on a mesh is roughly one draw call; share materials (atlas/trim sh
 
 - Read the GLB summary: triangle count, materials, clips and their channel counts as expected; no stray objects.
 - Optional: import it into an empty scene (`bpy_recipes.md` → verify) and render a preview.
-- In a Godot AI repo the GLB goes to `assets/3d/...` with a `.md` naming the source `.blend`; the asset map copies it into Godot, and the `glb-3d-model-and-animations` skill covers import settings and use.
+- In a Godot AI repo the GLB goes to `assets/3d/...` with a `.md` naming the source `.blend`; the asset map copies it into Godot, and the `godot-3d-models-and-animations` skill covers import settings and use.

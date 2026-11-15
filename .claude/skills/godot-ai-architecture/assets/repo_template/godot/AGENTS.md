@@ -17,7 +17,7 @@ This folder is built from the AI side and can be rebuilt from it:
   maps every folder and key file. Update it when you add, move or remove
   one.
 - **Conventions**: the `godot-development` skill (layout, scenes, Resources,
-  shaders, audio) and, for 3D models, the `glb-3d-model-and-animations`
+  shaders, audio) and, for 3D models, the `godot-3d-models-and-animations`
   skill. How the repo feeds this folder: the `godot-ai-architecture` skill.
 
 When you change game data or behavior here (a `.tres`, a scene property, a

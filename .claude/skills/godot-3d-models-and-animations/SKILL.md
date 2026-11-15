@@ -1,9 +1,9 @@
 ---
-name: glb-3d-model-and-animations
-description: How to bring rigged glTF/GLB character models, separate animation files, and attachable props (weapons) into a Godot 4 project, and drive them from game code. Covers inspecting a downloaded pack, folder layout for vendor assets, import settings (Animation Library import, loop modes), shared animation libraries for characters on the same rig, wrapper visual scenes with BoneAttachment3D, animation playback patterns, verification, and mobile performance. Use when adding or changing 3D models, animations, or weapons, or when replacing placeholder visuals with models.
+name: godot-3d-models-and-animations
+description: How to bring rigged 3D character models (vendor glTF/GLB packs, AI-made models from image-to-3D tools such as Tripo, with FBX animation files from Mixamo), separate animation files, and attachable props (weapons) into a Godot 4 project, and drive them from game code. Covers inspecting a pack, folder layout for vendor assets, import settings (Animation Library import, loop modes), shared animation libraries for characters on the same rig, retargeting clips onto a rig with the same bone names but other axes and rest pose (in code), wrapper visual scenes, holding a weapon in a hand (BoneAttachment3D, finding the grip), animation playback patterns, fitting clips to the game (foot-speed matching, impact timing, root travel, death at the end of a battle), verification (numbers, screenshots, logging real runs) and mobile performance. Bundles scripts to retarget a clip, attach a prop and measure a clip. Use when adding or changing 3D models, animations, or weapons, or when replacing placeholder visuals with models.
 ---
 
-# GLB 3D models and animations
+# Godot 3D models and animations
 
 How to add rigged `.glb`/`.gltf` characters, their animations and props to a Godot 4 project so they are easy to find, reuse and swap. Builds on the `godot-development` skill (folder layout, Resources, signals). GDScript only.
 
@@ -152,6 +152,7 @@ Naming a clip with a `-loop` / `_loop` suffix in the source file also marks it a
 ### Sharing animations between characters
 
 - **Same rig** (identical bone names, rests and skeleton node path): no retargeting needed. One library works for every character.
+- **Same bone names, other axes and rest pose** (a Mixamo clip on an AI auto-rig whose bones are named alike): copying the tracks twists the model. Retarget in code at load time with `scripts/clip_retarget.gd`; see [references/retargeting.md](references/retargeting.md) (why it fails, the method, the checks, the pitfalls: clip names that collide with the model's own, the shared library).
 - **Different rigs**: use Godot's retargeting. In the model's Advanced Import Settings, select the Skeleton3D, add a **BoneMap** with `SkeletonProfileHumanoid`, and enable the Retarget options (**Bone Renamer > Rename Bones**, **Unique Node > Make Unique** with a skeleton name so track paths do not depend on the hierarchy, and **Rest Fixer > Overwrite Axis**). Do the same for the animation files. Expect tuning; non-humanoid rigs need matching skeletons instead.
 - A common failure: the library "does nothing" because the AnimationPlayer's `root_node` or the skeleton's node path differs from the track paths. Compare a track path with the model's tree.
 
@@ -168,6 +169,7 @@ One small scene per character, whose root script implements the project's visual
 ```
 
 - **BoneAttachment3D** under the Skeleton3D makes a prop follow a bone. Create it in code from exported prop scenes (keeps `.tscn` files small and avoids editable-children paths) or add it with **Editable Children**; either way the vendor file stays untouched. Give each prop an optional offset `Transform3D` export, and adjust that offset, never the bone.
+- **A model with plain hand bones** (no hand slot) needs a computed offset: `scripts/bone_prop.gd` attaches the prop, and [references/props-on-bones.md](references/props-on-bones.md) shows how to find the grip (the hollow of the fist, not the wrist), set the angle and check it in every clip.
 - **Check a prop in an attack pose before "fixing" it.** Packs with hand-slot bones usually author props to sit at the slot with no offset; one-handed props may point down in idle and swing up in attacks, which is intended. Measure the prop's mesh AABB (its long axis) and look at an attack frame before adding a rotation.
 - **AnimationPlayer** lives in your scene, not in the model, with `root_node` pointing at the model so track paths resolve. Add the libraries in the Inspector (Animation > Manage Animations > Load Library) or in code with `add_animation_library()`.
 - **Scale and facing** are set on the `Model` node only, so the unit's own transform and the game logic stay unchanged.
@@ -257,7 +259,8 @@ func _on_animation_finished(clip: StringName) -> void:
 
 - **Do not call `play()` every frame** with the same clip; only on state changes. Game code often reports movement every physics frame, so the visual must ignore calls that do not change the state, or the clip restarts constantly.
 - **Never use a looping clip as a one-shot.** A looping clip never emits `animation_finished`, so the visual stays stuck in it. Pick a non-looping clip for one-shot actions.
-- **Match animation speed to movement** to avoid foot sliding: `_player.speed_scale = current_speed / authored_move_speed` while moving, `1.0` otherwise.
+- **Match animation speed to movement** to avoid foot sliding: `_player.speed_scale = current_speed / authored_move_speed` while moving, `1.0` otherwise. Measure the authored speed with `scripts/measure_clip.gd` instead of guessing; [references/tuning-clips.md](references/tuning-clips.md) has the rule, and the rest of fitting clips to the game (impact frames, skipping a wind-up, root travel, flinch cooldowns, loops).
+- **A battle that ends on a unit's death freezes the units' parent nodes**, and a falling unit's `AnimationPlayer` with them: give a falling visual its own process mode (`PROCESS_MODE_PAUSABLE`) so the fall plays out.
 - **Fit one-shots to game timing.** If an action lasts a fixed time in the game, play longer clips faster (`play(clip, blend_time, speed)`). `Engine.time_scale` speeds animations up together with the game.
 - **Hit timing.** If damage should land at the impact frame, add a **Call Method** track at that frame (or a timer of the same delay) rather than applying damage when the swing starts. Keep combat rules in game code; the visual only reports the moment.
 - **AnimationPlayer first, AnimationTree later.** A plain AnimationPlayer with cross-fades covers idle/move/attack/hit/death. Switch to an `AnimationTree` (state machine, blend spaces, one-shot nodes) when you need blending between many states or upper-body/lower-body layering.
@@ -290,6 +293,25 @@ print(lib.get_class(), " ", lib.get_animation("<looping clip>").loop_mode)  # ex
 - **Test-script pitfalls.** In a `SceneTree` script, a scene added in `_initialize()` is not ready yet (its `@onready` variables are null); call into it from `_process()` after the first frame. Disabling a node's processing (`process_mode = DISABLED`) also pauses its `AnimationPlayer`, so characters freeze in T-pose; to pose units for a screenshot, let them run a few frames instead.
 - **Single screenshots cannot prove an animation plays** (a frame may land on a blend or a pose similar to idle). Log state changes instead: in a headless run, print each visual's `AnimationPlayer.current_animation` and `get_playing_speed()` whenever they change, and check that every action and the return to idle appear.
 
+More recipes (headless checks, temporary scenes for the real game, contact sheets, logging a real run): [references/testing-recipes.md](references/testing-recipes.md).
+
+## 8. Models and clips from other sources
+
+A model made by an image-to-3D tool with an auto-rig, animated with clips from a free library:
+[references/ai-models-and-mixamo.md](references/ai-models-and-mixamo.md) (what to ask the tool, Mixamo's
+download settings, what to record about licences and settings, how to choose clips).
+
+## Bundled files
+
+| File | What it is |
+|---|---|
+| [scripts/clip_retarget.gd](scripts/clip_retarget.gd) | `ClipRetarget.add_clip(player, model, clip_scene, name, loop)`: copies a clip from another file onto a model with the same bone names by pointing each bone where the source's does; refuses a name the model already uses. Copy it to the project's visuals folder. |
+| [scripts/bone_prop.gd](scripts/bone_prop.gd) | `BoneProp.attach(skeleton, bone, prop_scene, offset)`: a prop on a bone. |
+| [scripts/measure_clip.gd](scripts/measure_clip.gd) | `godot --headless --path <project> -s measure_clip.gd -- <model.glb> <own:clip or clip.fbx> [scale]`: length, root travel and foot speed on the ground of a clip. |
+| [references/](references/) | `ai-models-and-mixamo.md`, `retargeting.md`, `props-on-bones.md`, `tuning-clips.md`, `testing-recipes.md`. |
+
+The scripts are copies of the ones in a project that uses them; improve them here, not only in the project.
+
 ## Checklist when adding a model pack
 
 1. Read `models.md` for what already exists.
@@ -301,6 +323,8 @@ print(lib.get_class(), " ", lib.get_animation("<looping clip>").loop_mode)  # ex
 7. Tune scale, height, animation speed and attack timing; verify (section 7).
 8. Check performance if many instances will be on screen at once.
 9. Update `models.md` with what was added, clip choices, and anything learned.
+
+For an AI-made model with downloaded clips, also: record the tool's settings and licence terms next to each file; retarget each clip (`retargeting.md`) and check the bone directions and a screenshot; measure the clips you use (`scripts/measure_clip.gd`) and set speeds from the numbers; place props from the fist, not the wrist (`props-on-bones.md`).
 
 ## Sources
 

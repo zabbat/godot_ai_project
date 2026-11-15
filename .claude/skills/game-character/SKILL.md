@@ -7,7 +7,7 @@ description: Keep a game's characters (heroes, mobs, bosses, the player, NPCs) i
 
 A game whose design has characters keeps each of them in one fixed shape, so the AI can ask the right questions, find every file of a character, and generate what is missing. **Optional**: a game without characters (a puzzle game) never sets this up, and nothing here applies until the folders exist.
 
-The repo conventions around it (docs vs prototype, `assets/`, tools, asset map, export) are the `godot-ai-architecture` skill. This skill only adds the character structure on top. The tool skills make the files: `comfy-ui-images` (portraits, cut-outs), `comfy-ui-sound-effects` (creature sounds, deaths), `generate-voice-lines` (voice reference and spoken lines; it runs Kokoro and `chatterbox-text-to-speech`), `blender-3d-modeling` and `glb-3d-model-and-animations` (models). Building the character in Godot is `godot-development`.
+The repo conventions around it (docs vs prototype, `assets/`, tools, asset map, export) are the `godot-ai-architecture` skill. This skill only adds the character structure on top. The tool skills make the files: `comfy-ui-images` (portraits, cut-outs), `comfy-ui-sound-effects` (creature sounds, deaths), `generate-voice-lines` (voice reference and spoken lines; it runs Kokoro and `chatterbox-text-to-speech`), `blender-3d-modeling` and `godot-3d-models-and-animations` (models). Building the character in Godot is `godot-development`.
 
 | File | What |
 |---|---|

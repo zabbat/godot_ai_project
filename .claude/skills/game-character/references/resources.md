@@ -8,7 +8,7 @@ The resources a character usually needs in the game. A type's resource set (`pro
 |---|---|---|---|---|
 | Face portrait | Appearance | `comfy-ui-images` | `2d/portraits/<name>/<name>_portrait.png` | square, 720x720 or more, face centered, nothing important in the corners |
 | Half portrait | Appearance | `comfy-ui-images` (+ cut out if transparent) | `2d/portraits/<name>/<name>_half_portrait.png` | head and torso, 2:3 portrait, 720x1080 or more |
-| 3D model | Appearance | `blender-3d-modeling` (own) or a vendor pack (`glb-3d-model-and-animations`) | own: `3d/characters/<name>/<name>.glb`; vendor: the pack's file in `3d/third_party/<pack>/` | budget and scale from `docs/style/3d_style.md`; animations listed |
+| 3D model | Appearance | `blender-3d-modeling` (own) or a vendor pack (`godot-3d-models-and-animations`) | own: `3d/characters/<name>/<name>.glb`; vendor: the pack's file in `3d/third_party/<pack>/` | budget and scale from `docs/style/3d_style.md`; animations listed |
 | Voice reference | Voice | `generate-voice-lines` (Kokoro; or the user's recording) | `audio/voice/<name>/<name>_voice_reference.wav` + `.md` (not exported to the game) | 6-8 s, calm, one speaker, clean, no effects; recipe or source and rights in the `.md` |
 | Greeting line | Voice, Background | `generate-voice-lines` (speech mode) | `audio/voice/<name>/<name>_greeting/` | 5 takes generated, 2-3 variants kept, the text from the bible's Voice (Greeting) |
 | Death sound | Voice (or Appearance for creatures) | `comfy-ui-sound-effects` (creatures, monsters), `generate-voice-lines` (human cries with the voice) | `audio/sfx/characters/<name>_death/` | 2-4 variants, short, trimmed |
@@ -24,7 +24,7 @@ Common extras to offer at set-up:
 | Full-body art | Appearance | `comfy-ui-images` | `2d/portraits/<name>/<name>_full.png` |
 | More spoken lines (spell calls, battle cry, hurt, victory, barks) | Voice | `generate-voice-lines` | `audio/voice/<name>/<name>_<line>/` |
 | Hurt / attack / idle sounds | Voice or Appearance | `comfy-ui-sound-effects` | `audio/sfx/characters/<name>_<event>/` |
-| Animations (for a vendor rig) | Appearance (movement) | `glb-3d-model-and-animations` / `blender-3d-modeling` | with the model |
+| Animations (for a vendor rig) | Appearance (movement) | `godot-3d-models-and-animations` / `blender-3d-modeling` | with the model |
 
 The Godot path of each resource is project-specific (for example `entities/<type>/<name>/<name>_portrait.png`): agree it at set-up from `prototype/godot_structure.md` and write it into the type's resource set. The asset map entry and its profile follow the architecture skill.
 

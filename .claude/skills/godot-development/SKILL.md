@@ -11,7 +11,7 @@ The repository around the Godot project (the design docs, the build spec in `pro
 - **Nothing about the game may exist only in Godot.** A change to game data or behavior updates `prototype/` in the same step; a new, moved or removed folder or key file updates `prototype/godot_structure.md`.
 - **Images, models and sounds come in through the repo's `assets/` and the asset map**, exported by `tools/godot-sync/export_assets.py`. Never drop a file straight into the Godot project, and never edit an exported file here.
 
-Specialist skills: `godot-shader-effects` (writing shaders and effects) and `glb-3d-model-and-animations` (rigged models, animations, props).
+Specialist skills: `godot-shader-effects` (writing shaders and effects) and `godot-3d-models-and-animations` (rigged models, animations, props).
 
 ## Core principles
 

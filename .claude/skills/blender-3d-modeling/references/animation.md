@@ -99,4 +99,4 @@ act.use_fake_user = True
 - `export_force_sampling=True` (default): curves are sampled per frame, so modifiers and non-linear interpolation survive.
 - `export_def_bones=True` for games: control/IK bones are dropped (bake first).
 - Shape-key clips export as morph-target animations (`export_morph=True`).
-- In Godot, each clip appears in the `AnimationPlayer`; loop clips by name suffix or in the import dock. See the `glb-3d-model-and-animations` skill for the Godot side.
+- In Godot, each clip appears in the `AnimationPlayer`; loop clips by name suffix or in the import dock. See the `godot-3d-models-and-animations` skill for the Godot side.

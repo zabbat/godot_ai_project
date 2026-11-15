@@ -128,7 +128,7 @@ Only the `*_for_cli` tools (they start `blender --background <file>` inside the 
 Follows the `godot-ai-architecture` skill's flow (tool folder → `assets/` → asset map → Godot):
 - `<bl>/models/` holds the working files: `.blend` files and previews (`models/_previews/`).
 - The chosen export goes to `assets/3d/<kind>/<subject>/<subject>.glb` (share `assets/3d` → `/export`) with a `.md` next to it naming the source `.blend`.
-- `godot/` is never shared (the launcher refuses it); Godot gets the model through the asset map (`prototype/asset_map/models.toml`), and the `glb-3d-model-and-animations` skill covers importing it.
+- `godot/` is never shared (the launcher refuses it); Godot gets the model through the asset map (`prototype/asset_map/models.toml`), and the `godot-3d-models-and-animations` skill covers importing it.
 
 ## 3. VM mode (Blender with a window)
 
