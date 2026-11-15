@@ -1,9 +1,9 @@
 # AGENTS.md
 
-Template repo for Godot AI projects: the shared `.claude/` skills and agents (see
+Template repo for Godot AI projects: the shared skills and agents in `.agents/`, published as the Claude Code plugin `godot-ai` (see
 [README.md](README.md)). The paths below let the tool skills be tried out in this repo;
 their output goes to `tools/` (git-ignored, not part of the template). New game projects get
-their own `AGENTS.md` from `.claude/skills/godot-ai-architecture/assets/repo_template/`.
+their own `AGENTS.md` from `.agents/skills/godot-ai-architecture/assets/repo_template/`.
 
 ## Project paths
 

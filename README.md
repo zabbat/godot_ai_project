@@ -1,6 +1,6 @@
 # Godot AI project template
 
-A template for starting Godot 4 games that are built together with an AI agent (Claude Code). It holds the shared `.claude/` folder (skills and agents), including the starting template for a new game repository.
+A template for starting Godot 4 games that are built together with an AI agent. It holds the shared skills and agents (in `.agents/`, as the Claude Code plugin `godot-ai`), including the starting template for a new game repository.
 
 ## What a project built from this looks like
 
@@ -25,25 +25,25 @@ The repo has five working areas. The Godot project can be rebuilt from the other
   godot/<project>/   the Godot project
   export/            built game exports (git-ignored)
   downloads/         personal inbox for raw downloads (git-ignored)
-  .claude/           skills and agents
+  .claude/           settings.json: enables the godot-ai plugin (skills and agents are not copied)
 ```
 
 Flow: `docs/` → `prototype/` → `godot/`, and `downloads/` or a tool's `output/` → `assets/` → asset map → `godot/`. Every folder has an `AGENTS.md` index. Tool skills read their folder from the "Project paths" table in the root `AGENTS.md`; if a project has no row for one, the skill asks once and adds it.
 
 ## Start a new project
 
-In Claude Code, from this repo, ask to start a new Godot project (the `godot-ai-architecture` skill, [references/new_project.md](.claude/skills/godot-ai-architecture/references/new_project.md)). It asks for the destination folder, game name, renderer and window size, then:
+In Claude Code, from this repo, ask to start a new Godot project (the `godot-ai-architecture` skill, [references/new_project.md](.agents/skills/godot-ai-architecture/references/new_project.md)). It asks for the destination folder, game name, renderer and window size, then:
 
-1. copies `.claude/`,
+1. adds `.claude/settings.json`, which enables the `godot-ai` plugin,
 2. creates all repo and Godot folders,
 3. writes the `AGENTS.md` files, standard docs and a minimal `project.godot` / `main.tscn`,
 4. copies `export_assets.py`, `check_sync.py` into `tools/godot-sync/` and the asset-map starter files.
 
 The destination must be empty or not exist yet. Tools (Chatterbox, Kokoro, Blender) are set up later by their own skills, into `tools/` ("init chatterbox", "init kokoro", ...).
 
-To bring an existing project up to date with the template, ask to migrate it ([references/migrate.md](.claude/skills/godot-ai-architecture/references/migrate.md)).
+To bring an existing project up to date with the template, ask to migrate it ([references/migrate.md](.agents/skills/godot-ai-architecture/references/migrate.md)).
 
-## Contents of `.claude/`
+## Contents of `.agents/`
 
 | Name | Kind | Purpose |
 |---|---|---|
@@ -106,6 +106,31 @@ The Chatterbox/Kokoro tests and lessons behind the lightweight route are in [voi
 - `uv` and `git`, only for `chatterbox-text-to-speech` and the Kokoro route of `generate-voice-lines` (an NVIDIA GPU is recommended; Kokoro and the Whisper check also run on CPU). First use downloads the models (Chatterbox several GB, Kokoro ~330 MB, Whisper ~460 MB) into the shared Hugging Face cache. Docker is optional there, only when Kokoro runs in a container (~7.8 GB image)
 - Docker and `uv`, only for `blender-3d-modeling`
 
+## Installing the skills
+
+The skills and agents live only here, in `.agents/` (`skills/` follows the open
+[Agent Skills](https://agentskills.io) format, so other agents can use them too).
+`.claude-plugin/` publishes them as the Claude Code plugin `godot-ai` from the marketplace
+`godot-ai-project`.
+
+- **Every project on this machine** (user scope): add the marketplace, then install.
+  From this local folder, edits here are live after `/reload-plugins` or a new session.
+  ```
+  claude plugin marketplace add C:\path\to\ai_templates
+  claude plugin install godot-ai@godot-ai-project --scope user
+  ```
+  Or from GitHub: `claude plugin marketplace add zabbat/godot_ai_project` (updates with `claude plugin marketplace update`).
+- **One game project**: its `.claude/settings.json` lists the marketplace and enables the plugin
+  (see `.agents/skills/godot-ai-architecture/assets/repo_template/.claude/settings.json`);
+  Claude Code offers to install it when the project is opened. GitHub Copilot (VS Code)
+  reads the same settings.
+- **Other agents**: `npx skills add zabbat/godot_ai_project`, or link `.agents/skills/` into the agent's skills folder.
+
+In Claude Code, plugin skills are shown with the plugin prefix (`godot-ai:godot-development`).
+
 ## Changing the template
 
-Skills and agents are shared between projects, so improve them here first and then copy them into projects. Existing projects are not updated automatically; use the migrate steps.
+Improve the skills here; projects that use the plugin get the change, nothing is copied. A few
+files are still copied into a project and are refreshed by the skill that owns them:
+`tools/godot-sync/*.py` (`godot-ai-architecture`) and the Blender launcher
+`<bl>/config/run_sandbox.py` (`blender-3d-modeling`). Older projects with copied skills: use the migrate steps.

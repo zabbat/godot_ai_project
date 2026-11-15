@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "blender": {
+      "type": "stdio",
+      "command": "uv",
+      "args": [
+        "run",
+        "--quiet",
+        "${CLAUDE_PROJECT_DIR:-.}/tools/blender/config/run_sandbox.py",
+        "--config",
+        "tools/blender/config/sandbox.toml"
+      ],
+      "env": {}
+    }
+  }
+}

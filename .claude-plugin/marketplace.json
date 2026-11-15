@@ -1,0 +1,12 @@
+{
+  "name": "godot-ai-project",
+  "description": "Godot AI project template: shared skills and agents for Godot game repos.",
+  "owner": { "name": "zabbat" },
+  "plugins": [
+    {
+      "name": "godot-ai",
+      "source": "./",
+      "description": "Skills and agents for building Godot 4 games with an AI agent."
+    }
+  ]
+}

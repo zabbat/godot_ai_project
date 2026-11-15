@@ -1,0 +1,10 @@
+{
+  "extraKnownMarketplaces": {
+    "godot-ai-project": {
+      "source": { "source": "github", "repo": "zabbat/godot_ai_project" }
+    }
+  },
+  "enabledPlugins": {
+    "godot-ai@godot-ai-project": true
+  }
+}
