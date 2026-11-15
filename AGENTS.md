@@ -5,6 +5,23 @@ Template repo for Godot AI projects: the shared skills and agents in `.agents/`,
 their output goes to `tools/` (git-ignored, not part of the template). New game projects get
 their own `AGENTS.md` from `.agents/skills/godot-ai-architecture/assets/repo_template/`.
 
+## Changing the skills and agents
+
+Projects install the plugin from GitHub and only receive a change when the version in
+`.claude-plugin/plugin.json` goes up (a push without a bump never reaches them). So every
+change to `.agents/` (or the plugin files) comes with a version bump and a line in
+[CHANGELOG.md](CHANGELOG.md):
+
+- **patch** (1.0.0 → 1.0.1): fixes and wording inside a skill, no change in what it does.
+- **minor** (1.0.1 → 1.1.0): a new skill, reference or script, or a new capability of a skill.
+- **major** (1.1.0 → 2.0.0): a skill renamed or removed, or a change projects must migrate for
+  (new layout, moved files, changed project settings).
+
+One bump per push is enough (use the largest change in it). Keep `version` only in
+`plugin.json`, not in `marketplace.json`. After pushing, projects update with
+`claude plugin marketplace update godot-ai-project` and
+`claude plugin update godot-ai@godot-ai-project`, then `/reload-plugins`.
+
 ## Project paths
 
 | What | Path |

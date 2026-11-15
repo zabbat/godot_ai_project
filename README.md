@@ -113,24 +113,27 @@ The skills and agents live only here, in `.agents/` (`skills/` follows the open
 `.claude-plugin/` publishes them as the Claude Code plugin `godot-ai` from the marketplace
 `godot-ai-project`.
 
-- **Every project on this machine** (user scope): add the marketplace, then install.
-  From this local folder, edits here are live after `/reload-plugins` or a new session.
+- **A game project** (the normal way): its `.claude/settings.json` lists the marketplace and
+  enables the plugin (see `.agents/skills/godot-ai-architecture/assets/repo_template/.claude/settings.json`).
+  Install it once per machine from the project folder (or accept Claude Code's offer when the
+  project is opened):
   ```
-  claude plugin marketplace add C:\path\to\ai_templates
-  claude plugin install godot-ai@godot-ai-project --scope user
+  claude plugin marketplace add zabbat/godot_ai_project
+  claude plugin install godot-ai@godot-ai-project --scope project
   ```
-  Or from GitHub: `claude plugin marketplace add zabbat/godot_ai_project` (updates with `claude plugin marketplace update`).
-- **One game project**: its `.claude/settings.json` lists the marketplace and enables the plugin
-  (see `.agents/skills/godot-ai-architecture/assets/repo_template/.claude/settings.json`);
-  Claude Code offers to install it when the project is opened. GitHub Copilot (VS Code)
-  reads the same settings.
+  GitHub Copilot (VS Code) reads the same settings.
+- **Every project on a machine** (rarely wanted): `--scope user` instead.
+- **Updating** after a new version is pushed (see [AGENTS.md](AGENTS.md) for version bumps):
+  `claude plugin marketplace update godot-ai-project`, then
+  `claude plugin update godot-ai@godot-ai-project`, then `/reload-plugins`.
+- **Testing changes before pushing**: start a terminal session with `claude --plugin-dir <this repo>`.
 - **Other agents**: `npx skills add zabbat/godot_ai_project`, or link `.agents/skills/` into the agent's skills folder.
 
 In Claude Code, plugin skills are shown with the plugin prefix (`godot-ai:godot-development`).
 
 ## Changing the template
 
-Improve the skills here; projects that use the plugin get the change, nothing is copied. A few
+Improve the skills here, bump the version, add a CHANGELOG line and push; projects get the change when they update the plugin, nothing is copied. A few
 files are still copied into a project and are refreshed by the skill that owns them:
 `tools/godot-sync/*.py` (`godot-ai-architecture`) and the Blender launcher
 `<bl>/config/run_sandbox.py` (`blender-3d-modeling`). Older projects with copied skills: use the migrate steps.
