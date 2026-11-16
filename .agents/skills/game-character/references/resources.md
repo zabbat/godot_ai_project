@@ -6,6 +6,7 @@ The resources a character usually needs in the game. A type's resource set (`pro
 
 | Resource | Depends on | Tool skill | Master (default) | Spec (default) |
 |---|---|---|---|---|
+| Concept sheet | Appearance | `comfy-ui-images` ("concept sheet") | `2d/concept_sheets/<name>/<name>_concept_sheet.png` | 1280x720: the same character in front, back, side and a dynamic three-quarter pose that fits them, flat background; made **first** for every new character |
 | Face portrait | Appearance | `comfy-ui-images` | `2d/portraits/<name>/<name>_portrait.png` | square, 720x720 or more, face centered, nothing important in the corners |
 | Half portrait | Appearance | `comfy-ui-images` (+ cut out if transparent) | `2d/portraits/<name>/<name>_half_portrait.png` | head and torso, 2:3 portrait, 720x1080 or more |
 | 3D model | Appearance | `blender-3d-modeling` (own) or a vendor pack (`godot-3d-models-and-animations`) | own: `3d/characters/<name>/<name>.glb`; vendor: the pack's file in `3d/third_party/<pack>/` | budget and scale from `docs/style/3d_style.md`; animations listed |
@@ -30,8 +31,13 @@ The Godot path of each resource is project-specific (for example `entities/<type
 
 ## Tips per resource
 
+### Concept sheet
+- **Generate it whenever a character is created**, before anything else: one landscape image with the character in four full-body views (front, back, side, and a dynamic three-quarter pose that shows who they are: a mage casting, an archer drawing). It fixes outfit, hair and colours from every side.
+- Recipe and prompt: the `comfy-ui-images` skill, [references/concept-sheet.md](../../comfy-ui-images/references/concept-sheet.md). Start from the bible's Appearance prompt keywords and any design reference the user gave (a sprite, a sketch); the user picks the outfit and the take.
+- The 3D model, the portraits and the in-game figure are made from the chosen sheet (an image-to-3D tool gets the front, back and side views). Changing the Appearance makes it `outdated`.
+
 ### Face portrait
-- Make it first: it fixes the character's look, and later images use it as reference.
+- Make it right after the concept sheet (when the character has one): it fixes the character's face, and later images use it as reference.
 - Start from the template the style doc names for portraits (`comfy-ui-images`, "The project's style doc"). Prompt = the style doc's style keywords + the bible's Appearance **prompt keywords** + framing ("close-up face portrait, face fills most of the frame, three-quarter view") + background from the style doc.
 - Generate 3-4 takes with different seeds; the user picks one.
 

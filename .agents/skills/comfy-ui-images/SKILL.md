@@ -329,6 +329,12 @@ For finer hair edges ComfyUI's built-in **RemoveBackground** node (BiRefNet) is 
 it needs a BiRefNet model in `models/background_removal/`; ask the user before downloading
 one.
 
+### "concept sheet"  → one image with a character in four views
+A landscape sheet (1280x720) with the same character in front, back, side and a dynamic
+three-quarter pose: the way to fix a new character's look before its portraits and 3D model.
+The recipe (single-figure concept takes first, then the sheet, the prompt and what drifted) is
+in [references/concept-sheet.md](references/concept-sheet.md). **Read it before making one.**
+
 ## Display the finished image
 
 After any generation completes, open the saved PNG in the user's VS Code window so it shows
