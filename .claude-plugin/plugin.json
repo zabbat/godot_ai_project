@@ -1,6 +1,6 @@
 {
   "name": "godot-ai",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Skills and agents for building Godot 4 games with an AI agent: repo architecture, Godot development, 3D models and shaders, game characters, and local asset tools (ComfyUI images and sound effects, Blender, Chatterbox, Qwen3-TTS voice lines).",
   "skills": ["./.agents/skills/"],
   "agents": ["./.agents/agents/godot-resource-manager.md"]
