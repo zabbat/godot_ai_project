@@ -1,6 +1,6 @@
 ---
 name: godot-3d-models-and-animations
-description: Bring rigged 3D character models (vendor glTF/GLB packs, AI-made models from image-to-3D tools such as Tripo, Mixamo FBX animations), separate animation files and attachable props (weapons) into a Godot 4 project, and drive them from game code. Covers inspecting a pack, vendor folder layout, import settings (animation libraries, loop modes), shared animation libraries per rig, retargeting clips onto a rig with other axes or rest pose, wrapper visual scenes, holding a weapon in a hand (BoneAttachment3D), playback patterns, fitting clips to the game (foot speed, impact timing, root travel), verification (numbers, screenshots, logged runs), mobile performance, and cloaks and capes on AI auto-rigs (own bone chains, spring bones, colliders). Bundles scripts to retarget a clip, attach a prop and measure a clip. Use when adding or changing 3D models, animations or weapons, or when replacing placeholder visuals with models.
+description: Bring rigged 3D character models (vendor glTF/GLB packs, AI-made models from image-to-3D tools such as Tripo, Mixamo FBX animations), separate animation files and attachable props (weapons) into a Godot 4 project, and drive them from game code. Covers inspecting a pack, vendor folder layout, import settings (animation libraries, loop modes), shared animation libraries per rig, retargeting clips onto a rig with other axes or rest pose, wrapper visual scenes, holding a weapon in a hand (BoneAttachment3D), playback patterns, fitting clips to the game (foot speed, impact timing, root travel), verification (numbers, screenshots, logged runs), mobile performance, and cloaks, capes and ponytails on AI auto-rigs (split the part out, own bone chains, spring bones centred on the skeleton, colliders, a push while walking). Bundles scripts to retarget a clip, attach a prop, measure a clip, split a part out of a .glb, add bone chains, set up and measure spring bones. Use when adding or changing 3D models, animations or weapons, or when replacing placeholder visuals with models.
 ---
 
 # Godot 3D models and animations
@@ -303,9 +303,10 @@ A model made by an image-to-3D tool with an auto-rig, animated with clips from a
 download settings, what to record about licences and settings, how to choose clips, checking the
 auto-rig's weights and splitting parts out of the one mesh).
 
-A cloak, cape or other hanging cloth that the body pokes through, or that follows the arms:
-[references/cloaks-and-cloth.md](references/cloaks-and-cloth.md) (why auto-rigs skin it to the arms,
-how games handle it, its own bone chains with `SpringBoneSimulator3D` and capsule colliders, checking it).
+A cloak, cape or other hanging cloth that the body pokes through, or that follows the arms, and
+hair that should swing (a ponytail): [references/cloaks-and-cloth.md](references/cloaks-and-cloth.md)
+(why auto-rigs skin them badly, how games handle it, splitting the part out, its own bone chains with
+`SpringBoneSimulator3D` centred on the skeleton and colliders, a push while walking, measuring it).
 
 ## Bundled files
 
@@ -314,6 +315,10 @@ how games handle it, its own bone chains with `SpringBoneSimulator3D` and capsul
 | [scripts/clip_retarget.gd](scripts/clip_retarget.gd) | `ClipRetarget.add_clip(player, model, clip_scene, name, loop)`: copies a clip from another file onto a model with the same bone names by pointing each bone where the source's does; refuses a name the model already uses. Copy it to the project's visuals folder. |
 | [scripts/bone_prop.gd](scripts/bone_prop.gd) | `BoneProp.attach(skeleton, bone, prop_scene, offset)`: a prop on a bone. |
 | [scripts/measure_clip.gd](scripts/measure_clip.gd) | `godot --headless --path <project> -s measure_clip.gd -- <model.glb> <own:clip or clip.fbx> [scale]`: length, root travel and foot speed on the ground of a clip. |
+| [scripts/split_part.py](scripts/split_part.py) | `python -I split_part.py in.glb --list` / `in.glb out.glb Name "id:1,2" [--mask]`: lists the shells of a one-mesh `.glb` and moves chosen ones into their own mesh node (same skin), optionally with baked "how far down" / "side" vertex colours. Needs numpy. |
+| [scripts/add_bone_chains.py](scripts/add_bone_chains.py) | `python -I add_bone_chains.py in.glb out.glb --preset cloak\|ponytail`: adds bone chains (`<prefix>_<chain>_<n>`) to a split part and re-skins it to them. Needs numpy. |
+| [scripts/spring_chains.gd](scripts/spring_chains.gd) | `SpringChains` (a `SpringBoneSimulator3D`): finds and sets up those chains, centred on the skeleton, with collider helpers; extend it per part. Copy it to the project's effects folder. |
+| [scripts/spring_measure.gd](scripts/spring_measure.gd) | `godot --headless --path <project> -s <abs path>/spring_measure.gd -- <visual.tscn> <chain root> <chain last> <reference bone>`: lean and side swing of a chain standing, walking, moving and turned. |
 | [references/](references/) | `ai-models-and-mixamo.md`, `retargeting.md`, `props-on-bones.md`, `tuning-clips.md`, `testing-recipes.md`, `cloaks-and-cloth.md`. |
 
 The scripts are copies of the ones in a project that uses them; improve them here, not only in the project.
@@ -330,7 +335,7 @@ The scripts are copies of the ones in a project that uses them; improve them her
 8. Check performance if many instances will be on screen at once.
 9. Update `models.md` with what was added, clip choices, and anything learned.
 
-For an AI-made model with downloaded clips, also: record the tool's settings and licence terms next to each file; retarget each clip (`retargeting.md`) and check the bone directions and a screenshot; measure the clips you use (`scripts/measure_clip.gd`) and set speeds from the numbers; place props from the fist, not the wrist (`props-on-bones.md`); check the auto-rig's weights (feet, loose cloth) in an arm-heavy clip, and give a cloak its own spring-bone chains (`cloaks-and-cloth.md`).
+For an AI-made model with downloaded clips, also: record the tool's settings and licence terms next to each file; retarget each clip (`retargeting.md`) and check the bone directions and a screenshot; measure the clips you use (`scripts/measure_clip.gd`) and set speeds from the numbers; place props from the fist, not the wrist (`props-on-bones.md`); check the auto-rig's weights (feet, loose cloth) in an arm-heavy clip, and give a cloak or a ponytail its own spring-bone chains, centred on the skeleton, then measure them with `scripts/spring_measure.gd` (`cloaks-and-cloth.md`).
 
 ## Sources
 

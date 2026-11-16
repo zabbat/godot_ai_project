@@ -37,8 +37,10 @@ places. Both show only in motion, so look at a walk and an arm-heavy clip from b
 The export is one mesh made of separate shells (hair, cloak, boots...). Listing the connected
 pieces with their triangle counts and bounds, and moving chosen pieces into their own mesh node
 (same skin, vertices and material), lets the game hide a part (a ponytail under a hood) or give it
-its own material or bones. Plain Python with numpy on the `.glb` is enough for all of this;
-rendering each piece in its own colour is the quickest way to find the right ones.
+its own material or bones. Plain Python with numpy on the `.glb` is enough for all of this
+(`scripts/split_part.py`); rendering each piece in its own colour is the quickest way to find the
+right ones. A ponytail skinned 100% to the head is rigid: give it a bone chain and spring bones
+([cloaks-and-cloth.md](cloaks-and-cloth.md#hair-a-ponytail)).
 
 ## Mixamo downloads
 
