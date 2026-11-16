@@ -166,6 +166,8 @@ void vertex() {
 
 Use world position (not local `VERTEX`) so neighbouring meshes line up. Use `COLOR` (vertex colour) or `UV.y` as a mask so, for example, only the top of grass sways.
 
+**On a skinned character part** (a cloak swinging while she walks): Godot skins the mesh **before** `vertex()`, so `VERTEX` is already posed (model space). A mask taken from the posed position changes with the pose; bake the mask into vertex colours instead (e.g. red = how far down the cloak, green = which side), and make every offset a function of those colours and the position only, so the two vertices on each side of a UV seam move identically and the seam cannot open. Put the `ShaderMaterial` on with `material_override` only while the effect runs and set it back to `null` after, so the part looks exactly as imported the rest of the time. Bones (spring bones) suit cloth that must not pass through the body better than a shader; see the `godot-3d-models-and-animations` skill (`references/cloaks-and-cloth.md`).
+
 ### 6. Depth texture effects (soft edges, foam, intersection glow)
 
 Read the scene depth behind a transparent surface to find where it meets other geometry. **Godot 4.3+ uses reverse-Z** (near = 1.0, far = 0.0): many older shaders get comparisons backwards. Use this linearization (Forward+ and Mobile):
@@ -240,6 +242,9 @@ In 3D the screen is captured after the opaque pass: transparent objects are not 
 - **Fine noise detail looks blocky/grainy** when magnified or contrast-boosted; use low frequency and 1 octave for mist, smoke and clouds.
 - **Built-in depth fog is measured from the camera**, so with a steep top-down camera it draws rings on the ground and barely changes along the field. A world-space shader mask (technique 4) gives direct control.
 - **No implicit casts** (`float(2)`, not `2`); **local variables are not zero-initialized**; compare floats with a tolerance; out-of-bounds array access or infinite loops can break rendering or hang the editor.
+- **`pow(x, y)` with a negative `x` is undefined** (it returned garbage and made half a mesh vanish): write `x * x` for squares, or `sign(x) * pow(abs(x), y)`.
+- **Tween a shader parameter** with `tween_method(func(v): material.set_shader_parameter("name", v), from, to, seconds)`; tweening it by property path is unreliable.
+- **Double-sided cloth** (`cull_disabled`): flipping `NORMAL` on back faces (`if (!FRONT_FACING)`) made the inside of a cloak dark; leave the normals alone unless the lighting is clearly wrong.
 - Functions must be declared above where they are used.
 - Global uniforms must exist in Project Settings before the shader is saved, or it fails to compile.
 

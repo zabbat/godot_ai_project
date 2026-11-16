@@ -23,6 +23,23 @@ to check.
 Inspect it with the script in section 1 of `SKILL.md`: bone count and names (a Tripo rig has 65
 `mixamorig:...` joints, which Godot imports as `mixamorig_...`), the clips inside it, and the facing.
 
+## Check the auto-rig's weights
+
+The auto-rig binds each vertex to the bones near it in the A-pose, which goes wrong in two common
+places. Both show only in motion, so look at a walk and an arm-heavy clip from behind and in front:
+
+- **Feet skinned partly to the other leg**: the boots tear or stick together in the walk. Fix in
+  the file: for each connected piece in the foot band, move the influences of the other side's leg
+  bones to the mirrored bone of its own side.
+- **Loose cloth skinned to the arms** (cloak, cape, wide sleeves): it follows the arms like sleeves.
+  Give it its own bones and spring bones: [cloaks-and-cloth.md](cloaks-and-cloth.md).
+
+The export is one mesh made of separate shells (hair, cloak, boots...). Listing the connected
+pieces with their triangle counts and bounds, and moving chosen pieces into their own mesh node
+(same skin, vertices and material), lets the game hide a part (a ponytail under a hood) or give it
+its own material or bones. Plain Python with numpy on the `.glb` is enough for all of this;
+rendering each piece in its own colour is the quickest way to find the right ones.
+
 ## Mixamo downloads
 
 Mixamo's animations are made for one humanoid skeleton (`mixamorig:Hips`, `...Spine`, ...), and

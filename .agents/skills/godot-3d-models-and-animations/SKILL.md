@@ -1,6 +1,6 @@
 ---
 name: godot-3d-models-and-animations
-description: Bring rigged 3D character models (vendor glTF/GLB packs, AI-made models from image-to-3D tools such as Tripo, Mixamo FBX animations), separate animation files and attachable props (weapons) into a Godot 4 project, and drive them from game code. Covers inspecting a pack, vendor folder layout, import settings (animation libraries, loop modes), shared animation libraries per rig, retargeting clips onto a rig with other axes or rest pose, wrapper visual scenes, holding a weapon in a hand (BoneAttachment3D), playback patterns, fitting clips to the game (foot speed, impact timing, root travel), verification (numbers, screenshots, logged runs) and mobile performance. Bundles scripts to retarget a clip, attach a prop and measure a clip. Use when adding or changing 3D models, animations or weapons, or when replacing placeholder visuals with models.
+description: Bring rigged 3D character models (vendor glTF/GLB packs, AI-made models from image-to-3D tools such as Tripo, Mixamo FBX animations), separate animation files and attachable props (weapons) into a Godot 4 project, and drive them from game code. Covers inspecting a pack, vendor folder layout, import settings (animation libraries, loop modes), shared animation libraries per rig, retargeting clips onto a rig with other axes or rest pose, wrapper visual scenes, holding a weapon in a hand (BoneAttachment3D), playback patterns, fitting clips to the game (foot speed, impact timing, root travel), verification (numbers, screenshots, logged runs), mobile performance, and cloaks and capes on AI auto-rigs (own bone chains, spring bones, colliders). Bundles scripts to retarget a clip, attach a prop and measure a clip. Use when adding or changing 3D models, animations or weapons, or when replacing placeholder visuals with models.
 ---
 
 # Godot 3D models and animations
@@ -289,6 +289,7 @@ print(lib.get_class(), " ", lib.get_animation("<looping clip>").loop_mode)  # ex
 ```
 
 - **Look at it from the real game camera**: scale, facing, prop placement, health bar height and lighting. A `SceneTree` script run **without** `--headless` (e.g. `godot --path <project> --resolution <phone size> -s shot.gd`) can instance the main scene, wait some frames, and save `root.get_viewport().get_texture().get_image().save_png(path)` to a temp folder. For close-ups, add a temporary `Camera3D`, `look_at_from_position()` it at a unit, and make it `current`.
+- **Look from behind and in front, standing and in motion**, not only from the side: skinning faults (cloth following the arms, the skirt showing through a cloak) can be invisible from the side or in the walk.
 - **Size for the game camera.** Stylized models often read small from a high, distant camera; scale the `Model` node up until characters stay readable on the target screen, and update the height export to match.
 - **Test-script pitfalls.** In a `SceneTree` script, a scene added in `_initialize()` is not ready yet (its `@onready` variables are null); call into it from `_process()` after the first frame. Disabling a node's processing (`process_mode = DISABLED`) also pauses its `AnimationPlayer`, so characters freeze in T-pose; to pose units for a screenshot, let them run a few frames instead.
 - **Single screenshots cannot prove an animation plays** (a frame may land on a blend or a pose similar to idle). Log state changes instead: in a headless run, print each visual's `AnimationPlayer.current_animation` and `get_playing_speed()` whenever they change, and check that every action and the return to idle appear.
@@ -299,7 +300,12 @@ More recipes (headless checks, temporary scenes for the real game, contact sheet
 
 A model made by an image-to-3D tool with an auto-rig, animated with clips from a free library:
 [references/ai-models-and-mixamo.md](references/ai-models-and-mixamo.md) (what to ask the tool, Mixamo's
-download settings, what to record about licences and settings, how to choose clips).
+download settings, what to record about licences and settings, how to choose clips, checking the
+auto-rig's weights and splitting parts out of the one mesh).
+
+A cloak, cape or other hanging cloth that the body pokes through, or that follows the arms:
+[references/cloaks-and-cloth.md](references/cloaks-and-cloth.md) (why auto-rigs skin it to the arms,
+how games handle it, its own bone chains with `SpringBoneSimulator3D` and capsule colliders, checking it).
 
 ## Bundled files
 
@@ -308,7 +314,7 @@ download settings, what to record about licences and settings, how to choose cli
 | [scripts/clip_retarget.gd](scripts/clip_retarget.gd) | `ClipRetarget.add_clip(player, model, clip_scene, name, loop)`: copies a clip from another file onto a model with the same bone names by pointing each bone where the source's does; refuses a name the model already uses. Copy it to the project's visuals folder. |
 | [scripts/bone_prop.gd](scripts/bone_prop.gd) | `BoneProp.attach(skeleton, bone, prop_scene, offset)`: a prop on a bone. |
 | [scripts/measure_clip.gd](scripts/measure_clip.gd) | `godot --headless --path <project> -s measure_clip.gd -- <model.glb> <own:clip or clip.fbx> [scale]`: length, root travel and foot speed on the ground of a clip. |
-| [references/](references/) | `ai-models-and-mixamo.md`, `retargeting.md`, `props-on-bones.md`, `tuning-clips.md`, `testing-recipes.md`. |
+| [references/](references/) | `ai-models-and-mixamo.md`, `retargeting.md`, `props-on-bones.md`, `tuning-clips.md`, `testing-recipes.md`, `cloaks-and-cloth.md`. |
 
 The scripts are copies of the ones in a project that uses them; improve them here, not only in the project.
 
@@ -324,7 +330,7 @@ The scripts are copies of the ones in a project that uses them; improve them her
 8. Check performance if many instances will be on screen at once.
 9. Update `models.md` with what was added, clip choices, and anything learned.
 
-For an AI-made model with downloaded clips, also: record the tool's settings and licence terms next to each file; retarget each clip (`retargeting.md`) and check the bone directions and a screenshot; measure the clips you use (`scripts/measure_clip.gd`) and set speeds from the numbers; place props from the fist, not the wrist (`props-on-bones.md`).
+For an AI-made model with downloaded clips, also: record the tool's settings and licence terms next to each file; retarget each clip (`retargeting.md`) and check the bone directions and a screenshot; measure the clips you use (`scripts/measure_clip.gd`) and set speeds from the numbers; place props from the fist, not the wrist (`props-on-bones.md`); check the auto-rig's weights (feet, loose cloth) in an arm-heavy clip, and give a cloak its own spring-bone chains (`cloaks-and-cloth.md`).
 
 ## Sources
 
